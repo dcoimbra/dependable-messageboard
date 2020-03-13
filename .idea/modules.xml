@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/secforum.iml" filepath="$PROJECT_DIR$/secforum.iml" />
+      <module fileurl="file://$PROJECT_DIR$/secforum-client/secforum-client.iml" filepath="$PROJECT_DIR$/secforum-client/secforum-client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/secforum-interface/secforum-interface.iml" filepath="$PROJECT_DIR$/secforum-interface/secforum-interface.iml" />
+      <module fileurl="file://$PROJECT_DIR$/secforum-server/secforum-server.iml" filepath="$PROJECT_DIR$/secforum-server/secforum-server.iml" />
+    </modules>
+  </component>
+</project>
