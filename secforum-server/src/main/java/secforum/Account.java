@@ -1,5 +1,7 @@
 package secforum;
 
+import java.util.List;
+
 public class Account {
 
     private String _username;
@@ -12,5 +14,13 @@ public class Account {
 
     public String getUsername() {
         return _username;
+    }
+
+    public void post(String message,  List<Announcement> a) {
+        _announcementsBoard.post(message, _username, a);
+    }
+
+    public List<Announcement> read(int number) {
+        return _announcementsBoard.read(number);
     }
 }

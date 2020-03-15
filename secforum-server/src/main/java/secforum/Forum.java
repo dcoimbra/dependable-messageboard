@@ -1,50 +1,90 @@
+/*
+  @author GROUP 25
+ * Main class that represents a forum
+ */
+
 package secforum;
 
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class Forum extends UnicastRemoteObject implements ForumInterface {
 
-    private List<Account> _accounts;
+    private HashMap<String, Account> _accounts;
     private Board _generalBoard;
 
+    /**
+     *
+     * @throws RemoteException
+     */
     public Forum() throws RemoteException {
-        _accounts = new ArrayList<>();
+        _accounts = new HashMap<>();
         _generalBoard = new Board();
     }
 
+    /**
+     *
+     * @param username of the user who is registered
+     * @throws RemoteException if the user is already registered
+     */
     public void register(String username) throws RemoteException {
-        if (findAccountByUsername(username) == null) {
+        if (_accounts.putIfAbsent(username, new Account(username)) != null) {
             throw new RemoteException(username + " already registered.");
         }
-
-        _accounts.add(new Account(username));
     }
 
-    public void post(String name, String message, Announcement[] a) throws RemoteException {
+    /**
+     *
+     * @param username of the user who is posting
+     * @param message to be posted
+     * @param a quoted announcements
+     * @throws RemoteException
+     */
+    public void post(String username, String message, List<Announcement> a) throws RemoteException {
+        if (!_accounts.containsKey(username)) {
+            throw new RemoteException(username + " does not exist");
+        }
 
+        Account account = _accounts.get(username);
+        account.post(message, a);
     }
 
-    public void postGeneral(String name, String message, Announcement[] a) throws RemoteException {
+    /**
+     *
+     * @param username of the user who is posting
+     * @param message to be posted
+     * @param a quoted announcements
+     * @throws RemoteException
+     */
+    public void postGeneral(String username, String message, List<Announcement> a) throws RemoteException {
+        if (!_accounts.containsKey(username)) {
+            throw new RemoteException(username + " does not exist");
+        }
 
+        _generalBoard.post(username, message, a);
     }
 
-    public List<Announcement> read(String name, int number) throws RemoteException {
-        return null;
+    /**
+     *
+     * @param username of the user to read from
+     * @param number of posts to read
+     * @throws RemoteException
+     */
+    public List<Announcement> read(String username, int number) throws RemoteException {
+        Account account = _accounts.get(username);
+
+        if (account == null) {
+            throw new RemoteException(username + " does not exist");
+        }
+
+        return account.read(number);
     }
 
     public List<Announcement> readGeneral(int number) throws RemoteException {
-        return null;
-    }
-
-    private Account findAccountByUsername(String username) {
-        for (Account account : _accounts) {
-            if (account.getUsername().equals(username)) {
-                return account;
-            }
-        }
-        return null;
+        return _generalBoard.read(number);
     }
 }

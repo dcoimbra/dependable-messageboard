@@ -7,6 +7,11 @@
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/**/vcs.xml
+.idea/**/SEC_G25.iml
+.idea/**/misc.xml
+.idea/**/encodings.xml
+
 
 # Generated files
 .idea/**/contentModel.xml
@@ -69,3 +74,5 @@ fabric.properties
 
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
+
+.idea
