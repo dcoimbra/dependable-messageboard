@@ -30,6 +30,34 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
   </component>
+  <component name="RecentsManager">
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="secforum" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="AnnouncementTest.validAnnouncement" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="secforum-interface" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="secforum.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="secforum" />
+      <option name="MAIN_CLASS_NAME" value="secforum.AnnouncementTest" />
+      <option name="METHOD_NAME" value="validAnnouncement" />
+      <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JUnit.AnnouncementTest.validAnnouncement" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="WindowStateProjectService">
     <state x="2578" y="335" width="593" height="383" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1584113431586">
       <screen x="1920" y="0" width="1920" height="1080" />
@@ -39,6 +67,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2688" y="248" width="374" height="557" key="#com.intellij.ide.util.MemberChooser/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584114001495" />
+    <state x="2649" y="391" width="461" height="279" key="#com.intellij.refactoring.move.moveClassesOrPackages.MoveClassesOrPackagesDialog.classes" timestamp="1584288591328">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2649" y="391" width="461" height="279" key="#com.intellij.refactoring.move.moveClassesOrPackages.MoveClassesOrPackagesDialog.classes/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584288591328" />
     <state x="2413" y="187" width="924" height="679" key="Maven.ArtifactSearchDialog" timestamp="1584114502317">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>

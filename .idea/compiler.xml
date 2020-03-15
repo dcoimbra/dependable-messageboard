@@ -12,9 +12,9 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="secforum" target="1.5" />
+      <module name="secforum" target="1.8" />
       <module name="secforum-client" target="1.8" />
-      <module name="secforum-interface" target="1.5" />
+      <module name="secforum-interface" target="1.8" />
       <module name="secforum-server" target="1.8" />
     </bytecodeTargetLevel>
   </component>
