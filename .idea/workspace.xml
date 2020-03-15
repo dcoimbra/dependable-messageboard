@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="25440e3f-4f40-436f-9f20-2a5b63d7cb80" name="Default Changelist" comment="" />
+    <list default="true" id="25440e3f-4f40-436f-9f20-2a5b63d7cb80" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secforum-interface/src/main/java/secforum/ForumInterface.java" beforeDir="false" afterPath="$PROJECT_DIR$/secforum-interface/src/main/java/secforum/ForumInterface.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secforum-server/src/main/java/secforum/Forum.java" beforeDir="false" afterPath="$PROJECT_DIR$/secforum-server/src/main/java/secforum/Forum.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secforum.iml" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,6 +20,9 @@
         <option value="Class" />
       </list>
     </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MavenImportPreferences">
     <option name="importingSettings">
@@ -29,9 +39,13 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
   </component>
   <component name="RecentsManager">
     <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="secforum" />
+    </key>
+    <key name="CreateClassDialog.RecentsKey">
       <recent name="secforum" />
     </key>
   </component>
@@ -59,10 +73,14 @@
     </recent_temporary>
   </component>
   <component name="WindowStateProjectService">
-    <state x="2578" y="335" width="593" height="383" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1584113431586">
+    <state x="2475" y="190" width="800" height="672" key="#Plugins" timestamp="1584294493356">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2578" y="335" width="593" height="383" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584113431586" />
+    <state x="2475" y="190" width="800" height="672" key="#Plugins/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584294493356" />
+    <state x="2578" y="335" width="593" height="383" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1584294447720">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2578" y="335" width="593" height="383" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584294447720" />
     <state x="2688" y="248" width="374" height="557" key="#com.intellij.ide.util.MemberChooser" timestamp="1584114001495">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>

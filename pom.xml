@@ -22,6 +22,4 @@
         <module>secforum-client</module>
         <module>secforum-interface</module>
     </modules>
-
-
 </project>
