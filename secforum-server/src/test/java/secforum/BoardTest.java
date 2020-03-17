@@ -95,7 +95,7 @@ public class BoardTest {
     }
 
     @Test
-    public void readtwoMostRecentAnnouncements() {
+    public void readTwoMostRecentAnnouncements() {
         _board.post("david", "test1", new ArrayList<>());
         _board.post("carrasco", "test2", new ArrayList<>());
         _board.post("ricardo", "test3", new ArrayList<>());

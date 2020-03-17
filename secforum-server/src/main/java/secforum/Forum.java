@@ -1,5 +1,5 @@
-/*
-  @author GROUP 25
+/**
+ * @author GROUP 25
  * Main class that represents a forum
  */
 
@@ -8,6 +8,8 @@ package secforum;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +49,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      * @param a quoted announcements
      * @throws RemoteException if no account with this username
      */
-    public void post(String username, String message, List<Announcement> a) throws RemoteException {
+    public void post(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
         if (!_accounts.containsKey(username)) {
             throw new RemoteException(username + " does not exist");
         }
@@ -68,9 +70,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      * @param username of the user who is posting
      * @param message to be posted
      * @param a quoted announcements
-     * @throws RemoteException is no account with this username
+     * @throws RemoteException if no account with this username
      */
-    public void postGeneral(String username, String message, List<Announcement> a) throws RemoteException {
+    public void postGeneral(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
         if (!_accounts.containsKey(username)) {
             throw new RemoteException(username + " does not exist");
         }
@@ -89,7 +91,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      * @param username of the user to read from
      * @param number of posts to read
      * @return read posts
-     * @throws RemoteException is no account with this username
+     * @throws RemoteException if no account with this username
      */
     public List<Announcement> read(String username, int number) throws RemoteException {
         Account account = _accounts.get(username);
@@ -110,7 +112,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      *
      * @param number of posts to read
      * @return read posts
-     * @throws RemoteException
+     * @throws RemoteException if trying to read more than total number of announcements
      */
     public List<Announcement> readGeneral(int number) throws RemoteException {
         try {
@@ -121,7 +123,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
         }
     }
 
-    @Override
     public String hello(String message) throws RemoteException {
         return "hello " + message;
     }

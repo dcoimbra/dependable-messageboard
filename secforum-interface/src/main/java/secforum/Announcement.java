@@ -5,10 +5,11 @@
 
 package secforum;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class Announcement {
+public class Announcement implements Serializable {
     private String _username;
     private String _message;
     private List _quotedAnnouncements;
