@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class Announcement {
-    private String _message;
     private String _username;
+    private String _message;
     private List _quotedAnnouncements;
     private LocalDateTime _timestamp;
 
@@ -20,7 +20,7 @@ public class Announcement {
      * @param username The author of the message
      * @throws IllegalArgumentException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(String message, String username, List<Announcement> quotedAnnouncements) throws IllegalArgumentException {
+    public Announcement(String username, String message, List<Announcement> quotedAnnouncements) throws IllegalArgumentException {
         if (message == null || username == null || quotedAnnouncements == null) {
             throw new IllegalArgumentException("Arguments cannot be null");
         }
@@ -29,8 +29,8 @@ public class Announcement {
             throw new IllegalArgumentException("Message cannot have more than 255 characters");
         }
 
-        _message = message;
         _username = username;
+        _message = message;
         _quotedAnnouncements = quotedAnnouncements;
 
         _timestamp = LocalDateTime.now();
@@ -42,6 +42,10 @@ public class Announcement {
 
     public String getUsername() {
         return _username;
+    }
+
+    public int nQuotedAnnouncements() {
+        return _quotedAnnouncements.size();
     }
 
     public LocalDateTime getTimestamp() {

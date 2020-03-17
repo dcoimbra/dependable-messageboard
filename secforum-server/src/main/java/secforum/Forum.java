@@ -43,7 +43,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      * @param username of the user who is posting
      * @param message to be posted
      * @param a quoted announcements
-     * @throws RemoteException
+     * @throws RemoteException if no account with this username
      */
     public void post(String username, String message, List<Announcement> a) throws RemoteException {
         if (!_accounts.containsKey(username)) {
@@ -51,7 +51,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
         }
 
         Account account = _accounts.get(username);
-        account.post(message, a);
+
+        try {
+            account.post(message, a);
+        } catch (IllegalArgumentException iae) {
+            throw new RemoteException(iae.getMessage());
+        }
     }
 
     /**
@@ -59,14 +64,18 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      * @param username of the user who is posting
      * @param message to be posted
      * @param a quoted announcements
-     * @throws RemoteException
+     * @throws RemoteException is no account with this username
      */
     public void postGeneral(String username, String message, List<Announcement> a) throws RemoteException {
         if (!_accounts.containsKey(username)) {
             throw new RemoteException(username + " does not exist");
         }
 
-        _generalBoard.post(username, message, a);
+        try {
+            _generalBoard.post(username, message, a);
+        } catch (IllegalArgumentException iae) {
+            throw new RemoteException(iae.getMessage());
+        }
     }
 
     /**
@@ -74,7 +83,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      * @param username of the user to read from
      * @param number of posts to read
      * @return read posts
-     * @throws RemoteException
+     * @throws RemoteException is no account with this username
      */
     public List<Announcement> read(String username, int number) throws RemoteException {
         Account account = _accounts.get(username);
@@ -93,6 +102,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      * @throws RemoteException
      */
     public List<Announcement> readGeneral(int number) throws RemoteException {
-        return _generalBoard.read(number);
+        try {
+            return _generalBoard.read(number);
+        } catch (IllegalArgumentException iae) {
+            throw new RemoteException(iae.getMessage());
+        }
     }
 }

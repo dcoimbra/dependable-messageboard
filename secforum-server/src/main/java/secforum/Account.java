@@ -16,8 +16,8 @@ public class Account {
         return _username;
     }
 
-    public void post(String message,  List<Announcement> a) {
-        _announcementsBoard.post(message, _username, a);
+    public void post(String message,  List<Announcement> a) throws IllegalArgumentException {
+        _announcementsBoard.post(_username, message, a);
     }
 
     public List<Announcement> read(int number) {

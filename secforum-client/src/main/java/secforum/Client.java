@@ -6,18 +6,14 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 public class Client {
-    ForumInterface forum;
+    ForumInterface _forum;
 
     public Client() {
         try {
-            forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");
+            _forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");
             System.out.println("Found server");
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (NotBoundException e) {
-            e.printStackTrace();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
+        } catch (RemoteException | NotBoundException | MalformedURLException e) {
+            System.out.println(e.getMessage());
         }
     }
 
