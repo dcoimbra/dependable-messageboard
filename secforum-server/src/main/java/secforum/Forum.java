@@ -36,6 +36,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
         if (_accounts.putIfAbsent(username, new Account(username)) != null) {
             throw new RemoteException(username + " already registered.");
         }
+
+        System.out.println("Registered " + username);
     }
 
     /**
@@ -57,6 +59,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());
         }
+
+        System.out.println(username + " just posted in their board");
     }
 
     /**
@@ -76,6 +80,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());
         }
+
+        System.out.println(username + " just posted in the general board");
     }
 
     /**
@@ -92,7 +98,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
             throw new RemoteException(username + " does not exist");
         }
 
-        return account.read(number);
+        try {
+            System.out.println("Reading " + number + " posts from " + username + "'s board");
+            return account.read(number);
+        } catch (IllegalArgumentException iae) {
+            throw new RemoteException(iae.getMessage());
+        }
     }
 
     /**
@@ -103,9 +114,15 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      */
     public List<Announcement> readGeneral(int number) throws RemoteException {
         try {
+            System.out.println("Reading " + number + " posts from the general board");
             return _generalBoard.read(number);
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());
         }
+    }
+
+    @Override
+    public String hello(String message) throws RemoteException {
+        return "hello " + message;
     }
 }

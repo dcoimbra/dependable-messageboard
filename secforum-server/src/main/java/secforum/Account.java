@@ -20,7 +20,7 @@ public class Account {
         _announcementsBoard.post(_username, message, a);
     }
 
-    public List<Announcement> read(int number) {
+    public List<Announcement> read(int number) throws IllegalArgumentException {
         return _announcementsBoard.read(number);
     }
 }

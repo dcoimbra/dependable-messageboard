@@ -16,4 +16,6 @@ public interface ForumInterface extends Remote {
     public List<Announcement> read(String username, int number) throws RemoteException;
 
     public List<Announcement> readGeneral(int number) throws RemoteException;
+
+    public String hello(String message) throws RemoteException;
 }
