@@ -29,7 +29,6 @@ public class RSAKeyGenerator {
         if (mode.toLowerCase().startsWith("w")) {
             System.out.println("Generate and save keys");
             write(privkeyPath);
-            write(pubkeyPath);
         } else {
             System.out.println("Load keys");
             read(privkeyPath);
@@ -57,11 +56,11 @@ public class RSAKeyGenerator {
         System.out.println(DataUtils.bytesToHex(pubKeyEncoded));
 
         System.out.println("Writing Private key to '" + keyPath + "' ..." );
-        try (FileOutputStream privFos = new FileOutputStream(keyPath)) {
+        try (FileOutputStream privFos = new FileOutputStream("priv.key")) {
             privFos.write(privKeyEncoded);
         }
         System.out.println("Writing Pubic key to '" + keyPath + "' ..." );
-        try (FileOutputStream pubFos = new FileOutputStream(keyPath)) {
+        try (FileOutputStream pubFos = new FileOutputStream("pub.key")) {
             pubFos.write(pubKeyEncoded);
         }
     }
