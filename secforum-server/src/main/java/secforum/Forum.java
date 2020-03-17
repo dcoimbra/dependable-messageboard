@@ -11,10 +11,11 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Forum extends UnicastRemoteObject implements ForumInterface {
 
-    private HashMap<String, Account> _accounts;
+    private Map<String, Account> _accounts;
     private Board _generalBoard;
 
     /**
@@ -72,6 +73,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      *
      * @param username of the user to read from
      * @param number of posts to read
+     * @return read posts
      * @throws RemoteException
      */
     public List<Announcement> read(String username, int number) throws RemoteException {
@@ -84,6 +86,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
         return account.read(number);
     }
 
+    /**
+     *
+     * @param number of posts to read
+     * @return read posts
+     * @throws RemoteException
+     */
     public List<Announcement> readGeneral(int number) throws RemoteException {
         return _generalBoard.read(number);
     }

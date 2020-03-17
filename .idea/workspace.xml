@@ -4,14 +4,6 @@
     <list default="true" id="25440e3f-4f40-436f-9f20-2a5b63d7cb80" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secforum-client/secforum-client.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/secforum-interface/secforum-interface.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/secforum-interface/src/main/java/secforum/Announcement.java" beforeDir="false" afterPath="$PROJECT_DIR$/secforum-interface/src/main/java/secforum/Announcement.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secforum-interface/src/main/java/secforum/ForumInterface.java" beforeDir="false" afterPath="$PROJECT_DIR$/secforum-interface/src/main/java/secforum/ForumInterface.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secforum-interface/src/test/java/secforum/AnnouncementTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/secforum-interface/src/test/java/secforum/AnnouncementTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secforum-server/secforum-server.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/secforum-server/src/main/java/secforum/Account.java" beforeDir="false" afterPath="$PROJECT_DIR$/secforum-server/src/main/java/secforum/Account.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secforum-server/src/main/java/secforum/Board.java" beforeDir="false" afterPath="$PROJECT_DIR$/secforum-server/src/main/java/secforum/Board.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/secforum-server/src/main/java/secforum/Forum.java" beforeDir="false" afterPath="$PROJECT_DIR$/secforum-server/src/main/java/secforum/Forum.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -54,7 +46,15 @@
       <recent name="secforum" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="JUnit.All in SEC_G25">
+    <configuration name="All in SEC_G25" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="SEC_G25" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="TEST_OBJECT" value="package" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="AnnouncementTest.validAnnouncement" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="secforum-interface" />
       <extension name="coverage">
@@ -73,6 +73,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="JUnit.All in SEC_G25" />
         <item itemvalue="JUnit.AnnouncementTest.validAnnouncement" />
       </list>
     </recent_temporary>
@@ -102,6 +103,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2413" y="187" width="924" height="679" key="Maven.ArtifactSearchDialog/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584114502317" />
+    <state x="2556" y="127" width="647" height="804" key="find.popup" timestamp="1584435020601">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2556" y="127" width="647" height="804" key="find.popup/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584435020601" />
     <state x="2544" y="243" key="run.anything.popup" timestamp="1584114556307">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
