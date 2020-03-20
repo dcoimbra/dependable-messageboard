@@ -5,6 +5,8 @@
 
 package secforum;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
@@ -12,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Forum extends UnicastRemoteObject implements ForumInterface {
+public class Forum extends UnicastRemoteObject implements ForumInterface, Serializable {
 
     private Map<String, Account> _accounts;
     private Board _generalBoard;
@@ -36,6 +38,11 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
             throw new RemoteException(username + " already registered.");
         }
 
+        try {
+            ForumServer.writeForum(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         System.out.println("Registered " + username);
     }
 
@@ -63,6 +70,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
             throw new RemoteException(iae.getMessage());
         }
 
+        try {
+            ForumServer.writeForum(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         System.out.println(username + " just posted in their board");
     }
 
@@ -84,6 +97,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
             throw new RemoteException(iae.getMessage());
         }
 
+        try {
+            ForumServer.writeForum(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         System.out.println(username + " just posted in the general board");
     }
 
@@ -103,7 +122,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
 
         try {
             List<Announcement> list = account.read(number);
-            System.out.println("Reading " + number + " posts from " + username + "'s board");
+            System.out.println("Reading " + list.size() + " posts from " + username + "'s board");
             return list;
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());
@@ -119,7 +138,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
     public List<Announcement> readGeneral(int number) throws RemoteException {
         try {
             List<Announcement> list = _generalBoard.read(number);
-            System.out.println("Reading " + number + " posts from the general board");
+            System.out.println("Reading " + list.size() + " posts from the general board");
             return list;
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());

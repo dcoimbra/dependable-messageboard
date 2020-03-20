@@ -81,3 +81,5 @@ fabric.properties
 secforum-client/target
 secforum-interface/target
 secforum-server/target
+
+secforum-server/src/main/resources/forum.ser

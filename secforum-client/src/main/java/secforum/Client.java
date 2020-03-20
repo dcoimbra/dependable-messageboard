@@ -101,12 +101,9 @@ public class Client {
                         break;
 
                     case 6:
-                        if(_forum.verifyRegistered(username)) {
-                            System.out.println("Thank you for using the app");
-                            System.exit(0);
-                        } else {
-                            System.out.println("You need to register first in order to use the app");
-                        }
+                        System.out.println("Thank you for using the app");
+                        System.exit(0);
+
 
                     default:
                         System.out.println("ERROR. Must be between 1 and 6");

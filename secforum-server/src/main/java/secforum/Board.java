@@ -1,9 +1,10 @@
 package secforum;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Board {
+public class Board implements Serializable {
     private List<Announcement> _announcements;
 
     public Board() {

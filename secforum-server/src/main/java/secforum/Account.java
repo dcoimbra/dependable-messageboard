@@ -1,8 +1,9 @@
 package secforum;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Account {
+public class Account implements Serializable {
 
     private String _username;
     private Board _announcementsBoard;
