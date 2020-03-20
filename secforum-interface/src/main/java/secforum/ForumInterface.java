@@ -10,6 +10,8 @@ import java.util.List;
 public interface ForumInterface extends Remote {
     public void register(String username) throws RemoteException;
 
+    public boolean verifyRegistered(String username) throws RemoteException;
+
     public void post(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException;
 
     public void postGeneral(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException;

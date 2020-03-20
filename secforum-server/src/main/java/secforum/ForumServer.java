@@ -1,7 +1,6 @@
 package secforum;
 
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
@@ -15,8 +14,8 @@ public class ForumServer {
             Forum forum = new Forum();
             System.out.println("After create");
 
-            Registry rmiregistry = LocateRegistry.createRegistry(registryPort);
-            rmiregistry.rebind("forum", forum);
+            Registry rmiRegistry = LocateRegistry.createRegistry(registryPort);
+            rmiRegistry.rebind("forum", forum);
 
             System.out.println("Forum server ready");
 

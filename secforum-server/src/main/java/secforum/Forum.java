@@ -5,12 +5,9 @@
 
 package secforum;
 
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +37,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
         }
 
         System.out.println("Registered " + username);
+    }
+
+    public boolean verifyRegistered(String username) throws RemoteException {
+         return _accounts.containsKey(username);
     }
 
     /**
@@ -101,8 +102,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
         }
 
         try {
+            List<Announcement> list = account.read(number);
             System.out.println("Reading " + number + " posts from " + username + "'s board");
-            return account.read(number);
+            return list;
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());
         }
@@ -116,8 +118,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface {
      */
     public List<Announcement> readGeneral(int number) throws RemoteException {
         try {
+            List<Announcement> list = _generalBoard.read(number);
             System.out.println("Reading " + number + " posts from the general board");
-            return _generalBoard.read(number);
+            return list;
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());
         }

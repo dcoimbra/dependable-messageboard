@@ -32,6 +32,7 @@ public class Board {
             result.add(_announcements.get(j));
         }
 
+
         return result;
     }
 
