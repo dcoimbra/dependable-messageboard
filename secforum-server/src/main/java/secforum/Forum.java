@@ -33,13 +33,15 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param username of the user who is registered
      * @throws RemoteException if the user is already registered
      */
-    public void register(String username) throws RemoteException {
+    public synchronized void register(String username) throws RemoteException {
         if (_accounts.putIfAbsent(username, new Account(username)) != null) {
             throw new RemoteException(username + " already registered.");
         }
 
         try {
-            ForumServer.writeForum(this);
+            synchronized (this) {
+                ForumServer.writeForum(this);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -57,7 +59,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @throws RemoteException if no account with this username
      */
-    public void post(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
+    public synchronized void post(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
         if (!_accounts.containsKey(username)) {
             throw new RemoteException(username + " does not exist");
         }
@@ -65,15 +67,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         Account account = _accounts.get(username);
 
         try {
-            account.post(message, a);
-        } catch (IllegalArgumentException iae) {
-            throw new RemoteException(iae.getMessage());
-        }
-
-        try {
-            ForumServer.writeForum(this);
-        } catch (IOException e) {
-            e.printStackTrace();
+            synchronized (this) {
+                account.post(message, a);
+                ForumServer.writeForum(this);
+            }
+        } catch (IllegalArgumentException | IOException e) {
+            throw new RemoteException(e.getMessage());
         }
 
         System.out.println(username + " just posted in their board");
@@ -86,21 +85,18 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @throws RemoteException if no account with this username
      */
-    public void postGeneral(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
+    public synchronized void postGeneral(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
         if (!_accounts.containsKey(username)) {
             throw new RemoteException(username + " does not exist");
         }
 
         try {
-            _generalBoard.post(username, message, a);
-        } catch (IllegalArgumentException iae) {
-            throw new RemoteException(iae.getMessage());
-        }
-
-        try {
-            ForumServer.writeForum(this);
-        } catch (IOException e) {
-            e.printStackTrace();
+            synchronized (this) {
+                _generalBoard.post(username, message, a);
+                ForumServer.writeForum(this);
+            }
+        } catch (IllegalArgumentException | IOException e) {
+            throw new RemoteException(e.getMessage());
         }
 
         System.out.println(username + " just posted in the general board");
