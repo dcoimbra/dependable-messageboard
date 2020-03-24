@@ -6,7 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 
-public class Hashing_SHA2 {
+public class Hashing_SHA256 {
 
     private static final String ALGORITHM = "SHA-256";
     public static final int N_BYTES_SALT = 20;

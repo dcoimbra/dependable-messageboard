@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.Map;
 
 public class Forum extends UnicastRemoteObject implements ForumInterface, Serializable {
 
-    private Map<String, Account> _accounts;
+    private Map<PublicKey, Account> _accounts;
     private Board _generalBoard;
 
     /**
@@ -30,12 +31,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
     /**
      *
-     * @param username of the user who is registered
+     * @param pubKey of the user who is registered
      * @throws RemoteException if the user is already registered
      */
-    public synchronized void register(String username) throws RemoteException {
-        if (_accounts.putIfAbsent(username, new Account(username)) != null) {
-            throw new RemoteException(username + " already registered.");
+    public synchronized void register(PublicKey pubKey) throws RemoteException {
+        if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
+            throw new RemoteException(pubKey.toString() + " already registered.");
         }
 
         try {
@@ -45,26 +46,26 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Registered " + username);
+        System.out.println("Registered " + pubKey.toString());
     }
 
-    public boolean verifyRegistered(String username) throws RemoteException {
-         return _accounts.containsKey(username);
+    public boolean verifyRegistered(PublicKey pubKey) throws RemoteException {
+         return _accounts.containsKey(pubKey);
     }
 
     /**
      *
-     * @param username of the user who is posting
+     * @param pubKey of the user who is posting
      * @param message to be posted
      * @param a quoted announcements
-     * @throws RemoteException if no account with this username
+     * @throws RemoteException if no account with this pubKey
      */
-    public synchronized void post(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
-        if (!_accounts.containsKey(username)) {
-            throw new RemoteException(username + " does not exist");
+    public synchronized void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
+        if (!_accounts.containsKey(pubKey)) {
+            throw new RemoteException(pubKey.toString() + " does not exist");
         }
 
-        Account account = _accounts.get(username);
+        Account account = _accounts.get(pubKey);
 
         try {
             synchronized (this) {
@@ -75,50 +76,50 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             throw new RemoteException(e.getMessage());
         }
 
-        System.out.println(username + " just posted in their board");
+        System.out.println(pubKey.toString() + " just posted in their board");
     }
 
     /**
      *
-     * @param username of the user who is posting
+     * @param pubKey of the user who is posting
      * @param message to be posted
      * @param a quoted announcements
-     * @throws RemoteException if no account with this username
+     * @throws RemoteException if no account with this pubKey
      */
-    public synchronized void postGeneral(String username, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
-        if (!_accounts.containsKey(username)) {
-            throw new RemoteException(username + " does not exist");
+    public synchronized void postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
+        if (!_accounts.containsKey(pubKey)) {
+            throw new RemoteException(pubKey.toString() + " does not exist");
         }
 
         try {
             synchronized (this) {
-                _generalBoard.post(username, message, a);
+                _generalBoard.post(pubKey, message, a);
                 ForumServer.writeForum(this);
             }
         } catch (IllegalArgumentException | IOException e) {
             throw new RemoteException(e.getMessage());
         }
 
-        System.out.println(username + " just posted in the general board");
+        System.out.println(pubKey.toString() + " just posted in the general board");
     }
 
     /**
      *
-     * @param username of the user to read from
+     * @param pubKey of the user to read from
      * @param number of posts to read
      * @return read posts
-     * @throws RemoteException if no account with this username
+     * @throws RemoteException if no account with this pubKey
      */
-    public List<Announcement> read(String username, int number) throws RemoteException {
-        Account account = _accounts.get(username);
+    public List<Announcement> read(PublicKey pubKey, int number) throws RemoteException {
+        Account account = _accounts.get(pubKey);
 
         if (account == null) {
-            throw new RemoteException(username + " does not exist");
+            throw new RemoteException(pubKey.toString() + " does not exist");
         }
 
         try {
             List<Announcement> list = account.read(number);
-            System.out.println("Reading " + list.size() + " posts from " + username + "'s board");
+            System.out.println("Reading " + list.size() + " posts from " + pubKey.toString() + "'s board");
             return list;
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());

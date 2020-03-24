@@ -6,23 +6,25 @@
 package secforum;
 
 import java.io.Serializable;
+import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class Announcement implements Serializable {
-    private String _username;
+    private PublicKey _pubKey;
     private String _message;
     private List _quotedAnnouncements;
     private LocalDateTime _timestamp;
 
     /**
      *
+     * @param pubKey The author of the message
      * @param message The message to be posted
-     * @param username The author of the message
+     * @param quotedAnnouncements List of announcements that were referred to
      * @throws IllegalArgumentException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(String username, String message, List<Announcement> quotedAnnouncements) throws IllegalArgumentException {
-        if (message == null || username == null || quotedAnnouncements == null) {
+    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements) throws IllegalArgumentException {
+        if (message == null || pubKey == null || quotedAnnouncements == null) {
             throw new IllegalArgumentException("Arguments cannot be null");
         }
 
@@ -30,7 +32,7 @@ public class Announcement implements Serializable {
             throw new IllegalArgumentException("Message cannot have more than 255 characters");
         }
 
-        _username = username;
+        _pubKey = pubKey;
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
 
@@ -41,8 +43,8 @@ public class Announcement implements Serializable {
         return _message;
     }
 
-    public String getUsername() {
-        return _username;
+    public PublicKey getPubKey() {
+        return _pubKey;
     }
 
     public int nQuotedAnnouncements() {
