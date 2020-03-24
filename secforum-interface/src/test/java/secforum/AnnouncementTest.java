@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AnnouncementTest {
-
+   /**
     private Announcement _announcement;
 
     @Test
@@ -62,4 +62,5 @@ public class AnnouncementTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new Announcement("", "", null));
     }
+    **/
 }
