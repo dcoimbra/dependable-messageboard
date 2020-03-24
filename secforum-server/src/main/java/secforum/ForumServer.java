@@ -70,6 +70,7 @@ public class ForumServer {
 
         backup_out.writeObject(forum);
         backup_out.close();
+        backup.close();
     }
 
     public static void main(String[] args) {
