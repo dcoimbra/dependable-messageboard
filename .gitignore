@@ -83,3 +83,4 @@ secforum-interface/target
 secforum-server/target
 
 secforum-server/src/main/resources/forum.ser
+secforum-server/src/main/resources/forum_backup.ser

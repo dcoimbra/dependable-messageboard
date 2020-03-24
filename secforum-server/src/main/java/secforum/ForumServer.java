@@ -9,6 +9,8 @@ public class ForumServer {
 
     private static Forum _forum;
     private static String _filename = "src/main/resources/forum.ser";
+    private static String _backup = "src/main/resources/forum_backup.ser";
+
 
     public ForumServer() throws RemoteException {
 
@@ -37,10 +39,21 @@ public class ForumServer {
            file.close();
 
            ForumServer.setForum(forum);
-       } catch (FileNotFoundException fnfe) {
-           throw fnfe;
        } catch (ClassNotFoundException | IOException e) {
-           e.printStackTrace();
+           try {
+               FileInputStream file_backup = new FileInputStream(_backup);
+               ObjectInputStream backup_in = new ObjectInputStream(file_backup);
+
+               Forum forum = (Forum) backup_in.readObject();
+               backup_in.close();
+               file_backup.close();
+
+               ForumServer.setForum(forum);
+           } catch (FileNotFoundException fnfe) {
+               throw fnfe;
+           } catch (IOException | ClassNotFoundException ex) {
+               ex.printStackTrace();
+           }
        }
     }
 
@@ -51,6 +64,12 @@ public class ForumServer {
         out.writeObject(forum);
         out.close();
         file.close();
+
+        FileOutputStream backup = new FileOutputStream(_backup);
+        ObjectOutputStream backup_out = new ObjectOutputStream(backup);
+
+        backup_out.writeObject(forum);
+        backup_out.close();
     }
 
     public static void main(String[] args) {
