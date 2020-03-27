@@ -5,8 +5,11 @@
 
 package secforum;
 
+import security.Signing_RSA;
+
 import java.io.IOException;
 import java.io.Serializable;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.PublicKey;
@@ -34,7 +37,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param pubKey of the user who is registered
      * @throws RemoteException if the user is already registered
      */
-    public synchronized void register(PublicKey pubKey) throws RemoteException {
+    public synchronized boolean register(PublicKey pubKey) throws RemoteException {
         if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
             throw new RemoteException(pubKey.toString() + " already registered.");
         }
@@ -45,8 +48,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             }
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
-        System.out.println("Registered " + pubKey.toString());
+        return true;
     }
 
     public boolean verifyRegistered(PublicKey pubKey) throws RemoteException {
@@ -60,16 +64,21 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @throws RemoteException if no account with this pubKey
      */
-    public synchronized void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
-        if (!_accounts.containsKey(pubKey)) {
+    public synchronized void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws RemoteException {
+        if (!verifyRegistered(pubKey)) {
             throw new RemoteException(pubKey.toString() + " does not exist");
+        }
+
+        String original = pubKey.toString() + message + a.toString() + timestamp.toString();
+        if (!Signing_RSA.verify(original, signature, pubKey)) {
+            throw new RemoteException("post: Security error.");
         }
 
         Account account = _accounts.get(pubKey);
 
         try {
             synchronized (this) {
-                account.post(message, a);
+                account.post(message, a, timestamp, signature);
                 ForumServer.writeForum(this);
             }
         } catch (IllegalArgumentException | IOException e) {
@@ -86,14 +95,19 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @throws RemoteException if no account with this pubKey
      */
-    public synchronized void postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp) throws RemoteException {
-        if (!_accounts.containsKey(pubKey)) {
+    public synchronized void postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws RemoteException {
+        if (!verifyRegistered(pubKey)) {
             throw new RemoteException(pubKey.toString() + " does not exist");
+        }
+
+        String original = pubKey.toString() + message + a.toString() + timestamp.toString();
+        if (!Signing_RSA.verify(original, signature, pubKey)) {
+            throw new RemoteException("postGeneral: Security error.");
         }
 
         try {
             synchronized (this) {
-                _generalBoard.post(pubKey, message, a);
+                _generalBoard.post(pubKey, message, a, timestamp, signature);
                 ForumServer.writeForum(this);
             }
         } catch (IllegalArgumentException | IOException e) {
@@ -110,11 +124,16 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @return read posts
      * @throws RemoteException if no account with this pubKey
      */
-    public List<Announcement> read(PublicKey pubKey, int number) throws RemoteException {
+    public List<Announcement> read(PublicKey senderPubKey, PublicKey pubKey, int number, String signature) throws RemoteException {
         Account account = _accounts.get(pubKey);
 
         if (account == null) {
             throw new RemoteException(pubKey.toString() + " does not exist");
+        }
+
+        String original = senderPubKey.toString() + pubKey.toString() + Integer.toString(number);
+        if (!Signing_RSA.verify(original, signature, senderPubKey)) {
+            throw new RemoteException("read: security error.");
         }
 
         try {
@@ -132,7 +151,13 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @return read posts
      * @throws RemoteException if trying to read more than total number of announcements
      */
-    public List<Announcement> readGeneral(int number) throws RemoteException {
+    public List<Announcement> readGeneral(PublicKey senderPubKey, int number, String signature) throws RemoteException {
+
+        String original = senderPubKey.toString() + Integer.toString(number);
+        if (!Signing_RSA.verify(original, signature, senderPubKey)) {
+            throw new RemoteException("read: security error.");
+        }
+
         try {
             List<Announcement> list = _generalBoard.read(number);
             System.out.println("Reading " + list.size() + " posts from the general board");

@@ -2,6 +2,7 @@ package secforum;
 
 import java.io.Serializable;
 import java.security.PublicKey;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class Account implements Serializable {
@@ -18,8 +19,8 @@ public class Account implements Serializable {
         return _pubKey;
     }
 
-    public void post(String message,  List<Announcement> a) throws IllegalArgumentException {
-        _announcementsBoard.post(_pubKey, message, a);
+    public void post(String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws IllegalArgumentException {
+        _announcementsBoard.post(_pubKey, message, a, timestamp,signature);
     }
 
     public List<Announcement> read(int number) throws IllegalArgumentException {

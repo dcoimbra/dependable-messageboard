@@ -1,5 +1,7 @@
 package secforum;
 
+import security.Signing_RSA;
+
 import javax.crypto.spec.SecretKeySpec;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -8,10 +10,9 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
@@ -20,20 +21,23 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Client {
+    String _id;
     PublicKey _publicKey;
     ForumInterface _forum;
     Scanner keyboardSc;
 
+
     public Client(String id) {
         try {
-            _publicKey = decodePublicKey(id);
+            _id = id;
+            _publicKey = loadPublicKey(id);
             System.out.println(_publicKey);
             _forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");
             System.out.println("Found server");
             System.out.println(_forum.hello("client"));
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
             System.out.println(e.getMessage());
-        } catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException e) {
+        } catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
             e.printStackTrace();
         }
 
@@ -51,18 +55,27 @@ public class Client {
             try {
 
                 command = Integer.parseInt(keyboardSc.nextLine());
+                List<Announcement> quotedAnnouncements;
+                PrivateKey privateKey;
+                LocalDateTime timestamp;
+                boolean success;
 
                 switch (command) {
                     case 1:
-                        _forum.register(_publicKey);
+                        if (!_forum.register(_publicKey)) {
+                            System.out.println("Could not register due to write fail.");
+                        }
                         break;
 
                     case 2:
                         if(_forum.verifyRegistered(_publicKey)) {
                             System.out.println("Enter the message to be posted:");
                             message = keyboardSc.nextLine();
-
-                            _forum.post(_publicKey, message, new ArrayList<>(), LocalDateTime.now());
+                            privateKey = loadPrivateKey(_id);
+                            quotedAnnouncements = new ArrayList<>();
+                            timestamp = LocalDateTime.now();
+                            String signature = Signing_RSA.sign(_publicKey.toString() + message + quotedAnnouncements.toString() + timestamp.toString(), privateKey);
+                            _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
                         } else {
                             System.out.println("You need to register first in order to use the app");
                         }
@@ -73,12 +86,12 @@ public class Client {
                         if(_forum.verifyRegistered(_publicKey)) {
                             System.out.println("Enter client id:");
                             id = keyboardSc.nextLine();
-                            publicKey = decodePublicKey(id);
-
+                            publicKey = loadPublicKey(id);
+                            privateKey = loadPrivateKey(_id);
                             System.out.println("Enter the number of announcements:");
                             nAnnouncement = Integer.parseInt(keyboardSc.nextLine());
-
-                            List<Announcement> list = _forum.read(publicKey, nAnnouncement);
+                            String signature = Signing_RSA.sign(_publicKey.toString() + publicKey.toString() + Integer.toString(nAnnouncement), privateKey);
+                            List<Announcement> list = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
 
                             System.out.println("Got " + list.size() + " announcements!");
                         } else {
@@ -90,8 +103,11 @@ public class Client {
                         if(_forum.verifyRegistered(_publicKey)) {
                             System.out.println("Enter the message to be posted:");
                             message = keyboardSc.nextLine();
-
-                            _forum.postGeneral(_publicKey, message, new ArrayList<>(), LocalDateTime.now());
+                            quotedAnnouncements = new ArrayList<>();
+                            timestamp = LocalDateTime.now();
+                            privateKey = loadPrivateKey(_id);
+                            String signature = Signing_RSA.sign(_publicKey.toString() + message + quotedAnnouncements.toString() + timestamp.toString(), privateKey);
+                            _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
                         } else {
                             System.out.println("You need to register first in order to use the app");
                         }
@@ -102,9 +118,9 @@ public class Client {
                         if (_forum.verifyRegistered(_publicKey)) {
                             System.out.println("Enter the number of announcements:");
                             nAnnouncement = Integer.parseInt(keyboardSc.nextLine());
-
-                            List<Announcement> listGeneral = _forum.readGeneral(nAnnouncement);
-
+                            privateKey = loadPrivateKey(_id);
+                            String signature = Signing_RSA.sign(_publicKey.toString() + Integer.toString(nAnnouncement), privateKey);
+                            List<Announcement> listGeneral = _forum.readGeneral(_publicKey, nAnnouncement, signature);
                             System.out.println("Got " + listGeneral.size() + " announcements!");
                         } else {
                             System.out.println("You need to register first in order to use the app");
@@ -124,22 +140,28 @@ public class Client {
                 System.out.println("ERROR. Must be number");
             } catch (RemoteException e) {
                 System.out.println("ERROR. Server could not finish the operation. Try again");
-            } catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException e) {
+                System.out.println(e.getMessage());
+            } catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    public static PrivateKey loadPrivateKey(String id) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
+        FileInputStream fis = new FileInputStream("src/main/resources/keystoreclient" + id + ".jks");
+        KeyStore keystore = KeyStore.getInstance("JKS");
+        keystore.load(fis, ("client" + id).toCharArray());
+        return (PrivateKey) keystore.getKey("client" + id, ("client" + id).toCharArray());
+    }
 
-    public static PublicKey decodePublicKey(String id) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public static PublicKey loadPublicKey(String id) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, KeyStoreException, CertificateException, UnrecoverableKeyException {
 
-        FileInputStream fis = new FileInputStream("src/main/resources/pub" + id + ".key");
-        byte[] encoded = new byte[fis.available()];
-        fis.read(encoded);
-        fis.close();
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(encoded);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return kf.generatePublic(spec);
+        FileInputStream fis = new FileInputStream("src/main/resources/keystoreclient" + id + ".jks");
+
+        KeyStore keystore = KeyStore.getInstance("JKS");
+        keystore.load(fis, ("client" + id).toCharArray());
+        Certificate cert = keystore.getCertificate("client" + id);
+        return cert.getPublicKey();
     }
 
 
