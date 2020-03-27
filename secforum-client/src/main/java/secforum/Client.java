@@ -2,9 +2,7 @@ package secforum;
 
 import security.Signing_RSA;
 
-import javax.crypto.spec.SecretKeySpec;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -13,18 +11,20 @@ import java.rmi.RemoteException;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class Client {
-    String _id;
-    PublicKey _publicKey;
-    ForumInterface _forum;
-    Scanner keyboardSc;
+    private String _id;
+    private PublicKey _publicKey;
+    private PublicKey _serverKey;
+    private ForumInterface _forum;
+    private Scanner keyboardSc;
 
 
     public Client(String id) {
@@ -32,9 +32,14 @@ public class Client {
             _id = id;
             _publicKey = loadPublicKey(id);
             System.out.println(_publicKey);
+
+            FileInputStream fin = new FileInputStream("src/main/resources/server.cer");
+            CertificateFactory f = CertificateFactory.getInstance("X.509");
+            X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
+            _serverKey = certificate.getPublicKey();
+
             _forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");
             System.out.println("Found server");
-            System.out.println(_forum.hello("client"));
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
             System.out.println(e.getMessage());
         } catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
@@ -58,79 +63,77 @@ public class Client {
                 List<Announcement> quotedAnnouncements;
                 PrivateKey privateKey;
                 LocalDateTime timestamp;
-                boolean success;
+                Response res;
+                String signature;
 
                 switch (command) {
-                    case 1:
-                        if (!_forum.register(_publicKey)) {
-                            System.out.println("Could not register due to write fail.");
-                        }
-                        break;
+                    case 1: // register
 
-                    case 2:
-                        if(_forum.verifyRegistered(_publicKey)) {
-                            System.out.println("Enter the message to be posted:");
-                            message = keyboardSc.nextLine();
-                            privateKey = loadPrivateKey(_id);
-                            quotedAnnouncements = new ArrayList<>();
-                            timestamp = LocalDateTime.now();
-                            String signature = Signing_RSA.sign(_publicKey.toString() + message + quotedAnnouncements.toString() + timestamp.toString(), privateKey);
-                            _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
-                        } else {
-                            System.out.println("You need to register first in order to use the app");
-                        }
+                        res = _forum.register(_publicKey);
+                        verifyResponse(res);
 
                         break;
 
-                    case 3:
-                        if(_forum.verifyRegistered(_publicKey)) {
-                            System.out.println("Enter client id:");
-                            id = keyboardSc.nextLine();
-                            publicKey = loadPublicKey(id);
-                            privateKey = loadPrivateKey(_id);
-                            System.out.println("Enter the number of announcements:");
-                            nAnnouncement = Integer.parseInt(keyboardSc.nextLine());
-                            String signature = Signing_RSA.sign(_publicKey.toString() + publicKey.toString() + Integer.toString(nAnnouncement), privateKey);
-                            List<Announcement> list = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
+                    case 2: // post
+                        System.out.println("Enter the message to be posted:");
+                        message = keyboardSc.nextLine();
 
-                            System.out.println("Got " + list.size() + " announcements!");
-                        } else {
-                            System.out.println("You need to register first in order to use the app");
-                        }
-                        break;
+                        //TODO: get list of announcement's IDs to quote
+                        quotedAnnouncements = new ArrayList<>();
+                        timestamp = LocalDateTime.now();
+                        privateKey = loadPrivateKey(_id);
+                        signature = Signing_RSA.sign(_publicKey.toString() + message + quotedAnnouncements.toString() + timestamp.toString(), privateKey);
 
-                    case 4:
-                        if(_forum.verifyRegistered(_publicKey)) {
-                            System.out.println("Enter the message to be posted:");
-                            message = keyboardSc.nextLine();
-                            quotedAnnouncements = new ArrayList<>();
-                            timestamp = LocalDateTime.now();
-                            privateKey = loadPrivateKey(_id);
-                            String signature = Signing_RSA.sign(_publicKey.toString() + message + quotedAnnouncements.toString() + timestamp.toString(), privateKey);
-                            _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
-                        } else {
-                            System.out.println("You need to register first in order to use the app");
-                        }
+                        res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
+                        verifyResponse(res);
 
                         break;
 
-                    case 5:
-                        if (_forum.verifyRegistered(_publicKey)) {
-                            System.out.println("Enter the number of announcements:");
-                            nAnnouncement = Integer.parseInt(keyboardSc.nextLine());
-                            privateKey = loadPrivateKey(_id);
-                            String signature = Signing_RSA.sign(_publicKey.toString() + Integer.toString(nAnnouncement), privateKey);
-                            List<Announcement> listGeneral = _forum.readGeneral(_publicKey, nAnnouncement, signature);
-                            System.out.println("Got " + listGeneral.size() + " announcements!");
-                        } else {
-                            System.out.println("You need to register first in order to use the app");
-                        }
+                    case 3: // read
+                        System.out.println("Enter client id:");
+                        id = keyboardSc.nextLine();
+
+                        publicKey = loadPublicKey(id);
+                        privateKey = loadPrivateKey(_id);
+                        System.out.println("Enter the number of announcements:");
+                        nAnnouncement = Integer.parseInt(keyboardSc.nextLine());
+                        signature = Signing_RSA.sign(_publicKey.toString() + publicKey.toString() + Integer.toString(nAnnouncement), privateKey);
+
+                        res = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
+                        verifyAnnouncements(res);
+
                         break;
 
-                    case 6:
+                    case 4: // postGeneral
+                        System.out.println("Enter the message to be posted:");
+                        message = keyboardSc.nextLine();
+
+                        //TODO: get list of announcement's IDs to quote
+                        quotedAnnouncements = new ArrayList<>();
+                        timestamp = LocalDateTime.now();
+                        privateKey = loadPrivateKey(_id);
+                        signature = Signing_RSA.sign(_publicKey.toString() + message + quotedAnnouncements.toString() + timestamp.toString(), privateKey);
+
+                        res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
+                        verifyResponse(res);
+
+                        break;
+
+                    case 5: // readGeneral
+                        System.out.println("Enter the number of announcements:");
+                        nAnnouncement = Integer.parseInt(keyboardSc.nextLine());
+
+                        privateKey = loadPrivateKey(_id);
+                        signature = Signing_RSA.sign(_publicKey.toString() + Integer.toString(nAnnouncement), privateKey);
+
+                        res = _forum.readGeneral(_publicKey, nAnnouncement, signature);
+                        verifyAnnouncements(res);
+
+                        break;
+
+                    case 6: // exit
                         System.out.println("Thank you for using the app");
                         System.exit(0);
-
 
                     default:
                         System.out.println("ERROR. Must be between 1 and 6");
@@ -140,21 +143,20 @@ public class Client {
                 System.out.println("ERROR. Must be number");
             } catch (RemoteException e) {
                 System.out.println("ERROR. Server could not finish the operation. Try again");
-                System.out.println(e.getMessage());
             } catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public static PrivateKey loadPrivateKey(String id) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
+    private static PrivateKey loadPrivateKey(String id) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
         FileInputStream fis = new FileInputStream("src/main/resources/keystoreclient" + id + ".jks");
         KeyStore keystore = KeyStore.getInstance("JKS");
         keystore.load(fis, ("client" + id).toCharArray());
         return (PrivateKey) keystore.getKey("client" + id, ("client" + id).toCharArray());
     }
 
-    public static PublicKey loadPublicKey(String id) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, KeyStoreException, CertificateException, UnrecoverableKeyException {
+    private static PublicKey loadPublicKey(String id) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, KeyStoreException, CertificateException, UnrecoverableKeyException {
 
         FileInputStream fis = new FileInputStream("src/main/resources/keystoreclient" + id + ".jks");
 
@@ -162,6 +164,29 @@ public class Client {
         keystore.load(fis, ("client" + id).toCharArray());
         Certificate cert = keystore.getCertificate("client" + id);
         return cert.getPublicKey();
+    }
+
+    private void verifyResponse(Response res) {
+        boolean success = Signing_RSA.verify(res.getResponse(), res.getSignature(), _serverKey);
+
+        if(success) {
+            System.out.println(res.getResponse());
+        }
+        else {
+            System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
+        }
+    }
+
+    private void verifyAnnouncements(Response res) {
+        boolean success = Signing_RSA.verify(res.getAnnouncements().toString(), res.getSignature(), _serverKey);
+
+        if(success) {
+            // System.out.println(res.getAnnouncements());
+            System.out.println("Got " + res.getAnnouncements().size() + " announcements!");
+        }
+        else {
+            System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
+        }
     }
 
 
