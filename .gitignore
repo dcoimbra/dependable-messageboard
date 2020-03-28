@@ -84,3 +84,6 @@ secforum-server/target
 
 secforum-server/src/main/resources/forum.ser
 secforum-server/src/main/resources/forum_backup.ser
+
+secforum-client/src/main/resources/nonces.ser
+secforum-client/src/main/resources/nonces_backup.ser

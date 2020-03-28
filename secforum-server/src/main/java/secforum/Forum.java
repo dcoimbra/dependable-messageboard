@@ -1,5 +1,6 @@
 package secforum;
 
+import security.Hashing_SHA256;
 import security.Signing_RSA;
 import security.Utils;
 
@@ -71,31 +72,39 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param signature
      * @throws RemoteException if no account with this pubKey
      */
-    public synchronized Response post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
-        if (!verifyRegistered(pubKey)) {
+    public synchronized Response post(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
+        if(!verifyRegistered(pubKey)) {
             throw new RemoteException(pubKey + " does not exist");
         }
 
+        List<Announcement> announcements;
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(pubKey);
         toSerialize.add(message);
         toSerialize.add(a);
         toSerialize.add(timestamp);
+        toSerialize.add(_accounts.get(pubKey).getNonce());
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
             if (!Signing_RSA.verify(messageBytes, signature, pubKey)) {
                 throw new RemoteException("post: Security error.");
             }
+
+            announcements = verifyAnnouncements(a);
         } catch (IOException e) {
             throw new RemoteException("Internal server error");
+        } catch (IllegalArgumentException e) {
+            _accounts.get(pubKey).setNonce();
+            throw new RemoteException("Quoted announcement does not exist");
         }
 
         Account account = _accounts.get(pubKey);
+        account.setNonce();
 
         try {
             synchronized (this) {
-                account.post(message, a, timestamp, signature);
+                account.post(message, announcements, timestamp, signature);
                 ForumServer.writeForum(this);
             }
         } catch (IllegalArgumentException | IOException e) {
@@ -118,29 +127,38 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param signature
      * @throws RemoteException if no account with this pubKey
      */
-    public synchronized Response postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
+    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
         if (!verifyRegistered(pubKey)) {
             throw new RemoteException(pubKey + " does not exist");
         }
 
+        List<Announcement> announcements;
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(pubKey);
         toSerialize.add(message);
         toSerialize.add(a);
         toSerialize.add(timestamp);
+        toSerialize.add(_accounts.get(pubKey).getNonce());
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
             if (!Signing_RSA.verify(messageBytes, signature, pubKey)) {
                 throw new RemoteException("post: Security error.");
             }
+
+            announcements = verifyAnnouncements(a);
         } catch (IOException e) {
             throw new RemoteException("Internal server error");
+        } catch (IllegalArgumentException e) {
+            _accounts.get(pubKey).setNonce();
+            throw new RemoteException("Quoted announcement does not exist");
         }
+
+        _accounts.get(pubKey).setNonce();
 
         try {
             synchronized (this) {
-                _generalBoard.post(pubKey, message, a, timestamp, signature);
+                _generalBoard.post(pubKey, message, announcements, timestamp, signature, _accounts.get(pubKey).getCounter());
                 ForumServer.writeForum(this);
             }
         } catch (IllegalArgumentException | IOException e) {
@@ -174,6 +192,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         toSerialize.add(senderPubKey);
         toSerialize.add(pubKey);
         toSerialize.add(number);
+        toSerialize.add(_accounts.get(senderPubKey).getNonce());
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
@@ -183,6 +202,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         } catch (IOException e) {
             throw new RemoteException("Internal server error");
         }
+
+        _accounts.get(senderPubKey).setNonce();
 
         try {
             PrivateKey privKey = loadPrivateKey();
@@ -209,6 +230,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(senderPubKey);
         toSerialize.add(number);
+        toSerialize.add(_accounts.get(senderPubKey).getNonce());
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
@@ -218,6 +240,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         } catch (IOException e) {
             throw new RemoteException("Internal server error");
         }
+
+        _accounts.get(senderPubKey).setNonce();
 
         try {
             PrivateKey privKey = loadPrivateKey();
@@ -242,6 +266,40 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | NoSuchAlgorithmException | IOException e) {
             e.printStackTrace();
         }
+        return null;
+    }
+
+    private List<Announcement> verifyAnnouncements(List<String> announcementIDs) throws IllegalArgumentException {
+        List<Announcement> announcements = new ArrayList<>();
+
+        for(String id : announcementIDs) {
+            Announcement announcement = announcementExists(id);
+
+            if(announcement == null) {
+                throw new IllegalArgumentException("Announcement " + id + " does not exist");
+            }
+            else {
+                announcements.add(announcement);
+            }
+        }
+        return announcements;
+    }
+
+    private Announcement announcementExists(String id) throws IllegalArgumentException {
+        for(Map.Entry<PublicKey, Account> entry : _accounts.entrySet()) {
+            for(Announcement announcement : entry.getValue().getBoardAnnouncements()) {
+                if(Hashing_SHA256.equals(id, announcement.getId())) {
+                    return announcement;
+                }
+            }
+        }
+
+        for(Announcement announcement : _generalBoard.getAnnouncements()) {
+            if(Hashing_SHA256.equals(id, announcement.getId())) {
+                return announcement;
+            }
+        }
+
         return null;
     }
 }

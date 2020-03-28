@@ -5,17 +5,21 @@
 
 package secforum;
 
+import security.Hashing_SHA256;
+
 import java.io.Serializable;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class Announcement implements Serializable {
+    private String _id;
     private PublicKey _pubKey;
     private String _message;
     private List<Announcement> _quotedAnnouncements;
     private LocalDateTime _timestamp;
     private byte[] _signature;
+
     /**
      *
      * @param pubKey The author of the message
@@ -24,7 +28,7 @@ public class Announcement implements Serializable {
      * @param signature
      * @throws IllegalArgumentException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, byte[] signature) throws IllegalArgumentException {
+    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, byte[] signature, int counter) throws IllegalArgumentException {
         if (message == null || pubKey == null || quotedAnnouncements == null) {
             throw new IllegalArgumentException("Arguments cannot be null");
         }
@@ -33,11 +37,16 @@ public class Announcement implements Serializable {
             throw new IllegalArgumentException("Message cannot have more than 255 characters");
         }
 
+        _id = Hashing_SHA256.getDigest(pubKey.toString() + counter);
         _pubKey = pubKey;
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
         _timestamp = timestamp;
         _signature = signature;
+    }
+
+    public String getId() {
+        return _id;
     }
 
     public String getMessage() {
@@ -52,7 +61,26 @@ public class Announcement implements Serializable {
         return _quotedAnnouncements.size();
     }
 
-    // TODO: create printAnnouncement method
-    // TODO: create announcementToString method
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("ID: " + _id);
+        builder.append("\nAuthor's pubKey:\n" + _pubKey);
+        builder.append("\nPublished time: " + _timestamp);
+        builder.append("\nQuoted Announcements: ");
+
+        if(_quotedAnnouncements.size() > 0) {
+            for(Announcement a : _quotedAnnouncements) {
+                builder.append(a._id + "; ");
+            }
+        }
+        else {
+            builder.append("none");
+        }
+
+        builder.append("\nMessage: " + _message + "\n");
+
+        return builder.toString();
+    }
 }
- 

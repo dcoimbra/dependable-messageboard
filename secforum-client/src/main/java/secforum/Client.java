@@ -3,8 +3,7 @@ package secforum;
 import security.Signing_RSA;
 import security.Utils;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -23,7 +22,8 @@ public class Client {
     private PublicKey _publicKey;
     private PublicKey _serverKey;
     private ForumInterface _forum;
-    private Scanner keyboardSc;
+    private Scanner _keyboardSc;
+    private NonceManager _manager;
 
     public Client(String id) {
         try {
@@ -38,13 +38,16 @@ public class Client {
 
             _forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");
             System.out.println("Found server");
+
+            _manager = new NonceManager();
+            System.out.println("Loaded nonce manager");
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
             System.out.println(e.getMessage());
         } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException e) {
             e.printStackTrace();
         }
 
-        keyboardSc = new Scanner(System.in);
+        _keyboardSc = new Scanner(System.in);
     }
 
     public void start() {
@@ -57,8 +60,8 @@ public class Client {
 
             try {
 
-                command = Integer.parseInt(keyboardSc.nextLine());
-                List<Announcement> quotedAnnouncements;
+                command = Integer.parseInt(_keyboardSc.nextLine());
+                List<String> quotedAnnouncements;
                 PrivateKey privateKey;
                 LocalDateTime timestamp;
                 Response res;
@@ -75,10 +78,17 @@ public class Client {
 
                     case 2: // post
                         System.out.println("Enter the message to be posted:");
-                        message = keyboardSc.nextLine();
+                        message = _keyboardSc.nextLine();
 
-                        //TODO: get list of announcement's IDs to quote
                         quotedAnnouncements = new ArrayList<>();
+                        System.out.println("Enter the number of announcements to be quoted:");
+                        nAnnouncement = Integer.parseInt(_keyboardSc.nextLine());
+
+                        for(int i = 0; i < nAnnouncement; i++) {
+                            System.out.println("(" + i + 1 + ") Enter the announcement ID:");
+                            quotedAnnouncements.add(_keyboardSc.nextLine());
+                        }
+
                         timestamp = LocalDateTime.now();
                         privateKey = Utils.loadPrivateKey(_id);
 
@@ -87,44 +97,54 @@ public class Client {
                         toSerialize.add(message);
                         toSerialize.add(quotedAnnouncements);
                         toSerialize.add(timestamp);
+                        toSerialize.add(_manager.getClientNonce(_publicKey));
 
                         messageBytes = Utils.serializeMessage(toSerialize);
-
                         signature = Signing_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
                         verifyResponse(res);
+                        _manager.setClientNonce(_publicKey);
 
                         break;
 
                     case 3: // read
                         System.out.println("Enter client id:");
-                        id = keyboardSc.nextLine();
+                        id = _keyboardSc.nextLine();
 
                         publicKey = Utils.loadPublicKey(id);
                         privateKey = Utils.loadPrivateKey(_id);
                         System.out.println("Enter the number of announcements:");
-                        nAnnouncement = Integer.parseInt(keyboardSc.nextLine());
+                        nAnnouncement = Integer.parseInt(_keyboardSc.nextLine());
 
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(publicKey);
                         toSerialize.add(nAnnouncement);
-                        messageBytes = Utils.serializeMessage(toSerialize);
+                        toSerialize.add(_manager.getClientNonce(_publicKey));
 
+                        messageBytes = Utils.serializeMessage(toSerialize);
                         signature = Signing_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
                         verifyAnnouncements(res);
+                        _manager.setClientNonce(_publicKey);
 
                         break;
 
                     case 4: // postGeneral
                         System.out.println("Enter the message to be posted:");
-                        message = keyboardSc.nextLine();
+                        message = _keyboardSc.nextLine();
 
-                        //TODO: get list of announcement's IDs to quote
                         quotedAnnouncements = new ArrayList<>();
+                        System.out.println("Enter the number of announcements to be quoted:");
+                        nAnnouncement = Integer.parseInt(_keyboardSc.nextLine());
+
+                        for(int i = 0; i < nAnnouncement; i++) {
+                            System.out.println("(" + i + 1 + ") Enter the announcement ID:");
+                            quotedAnnouncements.add(_keyboardSc.nextLine());
+                        }
+
                         timestamp = LocalDateTime.now();
                         privateKey = Utils.loadPrivateKey(_id);
 
@@ -133,30 +153,34 @@ public class Client {
                         toSerialize.add(message);
                         toSerialize.add(quotedAnnouncements);
                         toSerialize.add(timestamp);
-                        messageBytes = Utils.serializeMessage(toSerialize);
+                        toSerialize.add(_manager.getClientNonce(_publicKey));
 
+                        messageBytes = Utils.serializeMessage(toSerialize);
                         signature = Signing_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
                         verifyResponse(res);
+                        _manager.setClientNonce(_publicKey);
 
                         break;
 
                     case 5: // readGeneral
                         System.out.println("Enter the number of announcements:");
-                        nAnnouncement = Integer.parseInt(keyboardSc.nextLine());
+                        nAnnouncement = Integer.parseInt(_keyboardSc.nextLine());
 
                         privateKey = Utils.loadPrivateKey(_id);
 
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(nAnnouncement);
-                        messageBytes = Utils.serializeMessage(toSerialize);
+                        toSerialize.add(_manager.getClientNonce(_publicKey));
 
+                        messageBytes = Utils.serializeMessage(toSerialize);
                         signature = Signing_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.readGeneral(_publicKey, nAnnouncement, signature);
                         verifyAnnouncements(res);
+                        _manager.setClientNonce(_publicKey);
 
                         break;
 
@@ -171,7 +195,7 @@ public class Client {
             } catch (NumberFormatException e) {
                 System.out.println("ERROR. Must be number");
             } catch (RemoteException e) {
-                System.out.println("ERROR. Server could not finish the operation. Try again");
+                System.out.println(e.detail);
             } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
                 e.printStackTrace();
             }
@@ -193,14 +217,16 @@ public class Client {
         boolean success = Signing_RSA.verify(Utils.serialize(res.getAnnouncements()), res.getSignature(), _serverKey);
 
         if(success) {
-            // System.out.println(res.getAnnouncements());
-            System.out.println("Got " + res.getAnnouncements().size() + " announcements!");
+            for(Announcement a : res.getAnnouncements()) {
+                System.out.println(a);
+            }
+
+            System.out.println("Got " + res.getAnnouncements().size() + " announcements!\n");
         }
         else {
             System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
         }
     }
-
 
     public static void main(String[] args) {
         Client c = new Client(args[0]);
