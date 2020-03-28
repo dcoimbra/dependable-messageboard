@@ -25,7 +25,6 @@ public class Client {
     private ForumInterface _forum;
     private Scanner keyboardSc;
 
-
     public Client(String id) {
         try {
             _id = id;
@@ -48,7 +47,7 @@ public class Client {
         keyboardSc = new Scanner(System.in);
     }
 
-    public void start() throws RemoteException {
+    public void start() {
         int command, nAnnouncement;
         String id, message;
         PublicKey publicKey;
@@ -205,11 +204,6 @@ public class Client {
 
     public static void main(String[] args) {
         Client c = new Client(args[0]);
-
-        try {
-            c.start();
-        } catch (RemoteException re) {
-            System.out.println(re.getMessage());
-        }
+        c.start();
     }
 }
