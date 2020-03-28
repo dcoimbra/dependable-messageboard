@@ -29,7 +29,7 @@ public class Client {
         try {
             _id = id;
             _publicKey = Utils.loadPublicKey(id);
-            System.out.println(_publicKey);
+            System.out.println(_publicKey.getEncoded());
 
             FileInputStream fin = new FileInputStream("src/main/resources/server.cer");
             CertificateFactory f = CertificateFactory.getInstance("X.509");
