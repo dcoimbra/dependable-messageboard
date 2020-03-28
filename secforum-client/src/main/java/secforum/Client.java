@@ -103,8 +103,9 @@ public class Client {
                         signature = Signing_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
-                        verifyResponse(res);
                         _manager.setClientNonce(_publicKey);
+
+                        verifyResponse(res);
 
                         break;
 
@@ -127,8 +128,9 @@ public class Client {
                         signature = Signing_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
-                        verifyAnnouncements(res);
                         _manager.setClientNonce(_publicKey);
+
+                        verifyAnnouncements(res);
 
                         break;
 
@@ -159,8 +161,9 @@ public class Client {
                         signature = Signing_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
-                        verifyResponse(res);
                         _manager.setClientNonce(_publicKey);
+
+                        verifyResponse(res);
 
                         break;
 
@@ -179,8 +182,9 @@ public class Client {
                         signature = Signing_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.readGeneral(_publicKey, nAnnouncement, signature);
-                        verifyAnnouncements(res);
                         _manager.setClientNonce(_publicKey);
+
+                        verifyAnnouncements(res);
 
                         break;
 
@@ -203,29 +207,49 @@ public class Client {
     }
 
     private void verifyResponse(Response res) {
-        boolean success = Signing_RSA.verify(Utils.serialize(res.getResponse()), res.getSignature(), _serverKey);
+        List<Object> toSerialize = new ArrayList<>();
+        toSerialize.add(res.getResponse());
+        toSerialize.add(_manager.getClientNonce(_publicKey));
 
-        if(success) {
-            System.out.println(res.getResponse());
+        try {
+            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+
+            if(Signing_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
+                System.out.println(res.getResponse());
+            }
+            else {
+                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        else {
-            System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-        }
+
+        _manager.setClientNonce(_publicKey);
     }
 
     private void verifyAnnouncements(Response res) {
-        boolean success = Signing_RSA.verify(Utils.serialize(res.getAnnouncements()), res.getSignature(), _serverKey);
+        List<Object> toSerialize = new ArrayList<>();
+        toSerialize.add(res.getAnnouncements());
+        toSerialize.add(_manager.getClientNonce(_publicKey));
 
-        if(success) {
-            for(Announcement a : res.getAnnouncements()) {
-                System.out.println(a);
+        try {
+            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+
+            if(Signing_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
+
+                for(Announcement a : res.getAnnouncements()) {
+                    System.out.println(a);
+                }
+                System.out.println("Got " + res.getAnnouncements().size() + " announcements!\n");
             }
+            else {
+                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-            System.out.println("Got " + res.getAnnouncements().size() + " announcements!\n");
-        }
-        else {
-            System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-        }
+        _manager.setClientNonce(_publicKey);
     }
 
     public static void main(String[] args) {

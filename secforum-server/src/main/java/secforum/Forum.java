@@ -57,7 +57,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             text = "Failed to register";
         }
 
-        return new Response(null, text, privKey);
+        Response res = new Response(null, text, privKey, _accounts.get(pubKey).getNonce());
+        _accounts.get(pubKey).setNonce();
+        return res;
     }
 
     public boolean verifyRegistered(PublicKey pubKey) throws RemoteException {
@@ -116,7 +118,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         PrivateKey privKey = loadPrivateKey();
         if(privKey == null) throw new RemoteException("Internal server error");
 
-        return new Response(null, "Successfully uploaded the post", privKey);
+        Response res = new Response(null, "Successfully uploaded the post", privKey, account.getNonce());
+        account.setNonce();
+        return res;
     }
 
     /**
@@ -170,7 +174,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         PrivateKey privKey = loadPrivateKey();
         if(privKey == null) throw new RemoteException("Internal server error");
 
-        return new Response(null, "Successfully uploaded the post", privKey);
+        Response res = new Response(null, "Successfully uploaded the post", privKey, _accounts.get(pubKey).getNonce());
+        _accounts.get(pubKey).setNonce();
+        return res;
     }
 
     /**
@@ -212,7 +218,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             List<Announcement> list = account.read(number);
             System.out.println("Reading " + list.size() + " posts from " + pubKey + "'s board");
 
-            return new Response(list, null, privKey);
+            Response res = new Response(list, null, privKey, _accounts.get(senderPubKey).getNonce());
+            _accounts.get(senderPubKey).setNonce();
+            return res;
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());
         }
@@ -250,7 +258,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             List<Announcement> list = _generalBoard.read(number);
             System.out.println("Reading " + list.size() + " posts from the general board");
 
-            return new Response(list, null, privKey);
+            Response res = new Response(list, null, privKey, _accounts.get(senderPubKey).getNonce());
+            _accounts.get(senderPubKey).setNonce();
+            return res;
         } catch (IllegalArgumentException iae) {
             throw new RemoteException(iae.getMessage());
         }

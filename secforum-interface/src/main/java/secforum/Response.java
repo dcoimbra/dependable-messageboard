@@ -3,8 +3,10 @@ package secforum;
 import security.Signing_RSA;
 import security.Utils;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.security.PrivateKey;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Response implements Serializable {
@@ -12,15 +14,26 @@ public class Response implements Serializable {
     private String _response;
     private byte[] _signature;
 
-    public Response(List<Announcement> announcements, String response, PrivateKey privKey) {
+    public Response(List<Announcement> announcements, String response, PrivateKey privKey, Integer nonce) {
         _announcements = announcements;
         _response = response;
 
+        List<Object> toSerialize = new ArrayList<>();
+        byte[] messageBytes;
+
         if(response == null) {
-            _signature = Signing_RSA.sign(Utils.serialize(announcements), privKey);
+            toSerialize.add(announcements);
+            toSerialize.add(nonce);
         }
         else if(announcements == null) {
-            _signature = Signing_RSA.sign(Utils.serialize(response), privKey);
+            toSerialize.add(response);
+            toSerialize.add(nonce);
+        }
+        try {
+            messageBytes = Utils.serializeMessage(toSerialize);
+            _signature = Signing_RSA.sign(messageBytes, privKey);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
