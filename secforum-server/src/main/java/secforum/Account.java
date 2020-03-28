@@ -19,8 +19,8 @@ public class Account implements Serializable {
         return _pubKey;
     }
 
-    public void post(String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws IllegalArgumentException {
-        _announcementsBoard.post(_pubKey, message, a, timestamp,signature);
+    public void post(String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws IllegalArgumentException {
+        _announcementsBoard.post(_pubKey, message, a, timestamp, signature);
     }
 
     public List<Announcement> read(int number) throws IllegalArgumentException {

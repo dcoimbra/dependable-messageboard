@@ -7,23 +7,24 @@ package secforum;
 
 import java.io.Serializable;
 import java.security.PublicKey;
-import java.security.Signature;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class Announcement implements Serializable {
     private PublicKey _pubKey;
     private String _message;
-    private List _quotedAnnouncements;
-    private String _signature;
+    private List<Announcement> _quotedAnnouncements;
+    private LocalDateTime _timestamp;
+    private byte[] _signature;
     /**
      *
      * @param pubKey The author of the message
      * @param message The message to be posted
      * @param quotedAnnouncements List of announcements that were referred to
+     * @param signature
      * @throws IllegalArgumentException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, String signature) throws IllegalArgumentException {
+    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, byte[] signature) throws IllegalArgumentException {
         if (message == null || pubKey == null || quotedAnnouncements == null) {
             throw new IllegalArgumentException("Arguments cannot be null");
         }
@@ -35,6 +36,7 @@ public class Announcement implements Serializable {
         _pubKey = pubKey;
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
+        _timestamp = timestamp;
         _signature = signature;
     }
 

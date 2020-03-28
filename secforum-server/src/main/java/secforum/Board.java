@@ -13,7 +13,7 @@ public class Board implements Serializable {
         _announcements = new ArrayList<>();
     }
 
-    public void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws IllegalArgumentException {
+    public void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws IllegalArgumentException {
 
         Announcement announcement = new Announcement(pubKey, message, a, timestamp, signature);
         _announcements.add(0, announcement);
@@ -34,7 +34,6 @@ public class Board implements Serializable {
         for (int j = 0; j < number; j++) {
             result.add(_announcements.get(j));
         }
-
 
         return result;
     }

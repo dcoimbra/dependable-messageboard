@@ -1,14 +1,9 @@
-/**
- * @author GROUP 25
- * Main class that represents a forum
- */
-
 package secforum;
 
 import security.Signing_RSA;
+import security.Utils;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -16,6 +11,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +43,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
         String text;
         PrivateKey privKey = loadPrivateKey();
+
         if(privKey == null) throw new RemoteException("Internal server error");
 
         try {
@@ -71,16 +68,27 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param pubKey of the user who is posting
      * @param message to be posted
      * @param a quoted announcements
+     * @param signature
      * @throws RemoteException if no account with this pubKey
      */
-    public synchronized Response post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws RemoteException {
+    public synchronized Response post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
         if (!verifyRegistered(pubKey)) {
             throw new RemoteException(pubKey.toString() + " does not exist");
         }
 
-        String original = pubKey.toString() + message + a.toString() + timestamp.toString();
-        if (!Signing_RSA.verify(original, signature, pubKey)) {
-            throw new RemoteException("post: Security error.");
+        List<Object> toSerialize = new ArrayList<>();
+        toSerialize.add(pubKey);
+        toSerialize.add(message);
+        toSerialize.add(a);
+        toSerialize.add(timestamp);
+
+        try {
+            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            if (!Signing_RSA.verify(messageBytes, signature, pubKey)) {
+                throw new RemoteException("post: Security error.");
+            }
+        } catch (IOException e) {
+            throw new RemoteException("Internal server error");
         }
 
         Account account = _accounts.get(pubKey);
@@ -107,16 +115,27 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param pubKey of the user who is posting
      * @param message to be posted
      * @param a quoted announcements
+     * @param signature
      * @throws RemoteException if no account with this pubKey
      */
-    public synchronized Response postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws RemoteException {
+    public synchronized Response postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
         if (!verifyRegistered(pubKey)) {
             throw new RemoteException(pubKey.toString() + " does not exist");
         }
 
-        String original = pubKey.toString() + message + a.toString() + timestamp.toString();
-        if (!Signing_RSA.verify(original, signature, pubKey)) {
-            throw new RemoteException("postGeneral: Security error.");
+        List<Object> toSerialize = new ArrayList<>();
+        toSerialize.add(pubKey);
+        toSerialize.add(message);
+        toSerialize.add(a);
+        toSerialize.add(timestamp);
+
+        try {
+            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            if (!Signing_RSA.verify(messageBytes, signature, pubKey)) {
+                throw new RemoteException("post: Security error.");
+            }
+        } catch (IOException e) {
+            throw new RemoteException("Internal server error");
         }
 
         try {
@@ -140,19 +159,29 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      *
      * @param pubKey of the user to read from
      * @param number of posts to read
+     * @param signature
      * @return read posts
      * @throws RemoteException if no account with this pubKey
      */
-    public Response read(PublicKey senderPubKey, PublicKey pubKey, int number, String signature) throws RemoteException {
+    public Response read(PublicKey senderPubKey, PublicKey pubKey, int number, byte[] signature) throws RemoteException {
         Account account = _accounts.get(pubKey);
 
         if (account == null) {
             throw new RemoteException(pubKey.toString() + " does not exist");
         }
 
-        String original = senderPubKey.toString() + pubKey.toString() + number;
-        if (!Signing_RSA.verify(original, signature, senderPubKey)) {
-            throw new RemoteException("read: security error.");
+        List<Object> toSerialize = new ArrayList<>();
+        toSerialize.add(senderPubKey);
+        toSerialize.add(pubKey);
+        toSerialize.add(number);
+
+        try {
+            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            if (!Signing_RSA.verify(messageBytes, signature, senderPubKey)) {
+                throw new RemoteException("post: Security error.");
+            }
+        } catch (IOException e) {
+            throw new RemoteException("Internal server error");
         }
 
         try {
@@ -171,14 +200,23 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
     /**
      *
      * @param number of posts to read
+     * @param signature
      * @return read posts
      * @throws RemoteException if trying to read more than total number of announcements
      */
-    public Response readGeneral(PublicKey senderPubKey, int number, String signature) throws RemoteException {
+    public Response readGeneral(PublicKey senderPubKey, int number, byte[] signature) throws RemoteException {
 
-        String original = senderPubKey.toString() + Integer.toString(number);
-        if (!Signing_RSA.verify(original, signature, senderPubKey)) {
-            throw new RemoteException("read: security error.");
+        List<Object> toSerialize = new ArrayList<>();
+        toSerialize.add(senderPubKey);
+        toSerialize.add(number);
+
+        try {
+            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            if (!Signing_RSA.verify(messageBytes, signature, senderPubKey)) {
+                throw new RemoteException("post: Security error.");
+            }
+        } catch (IOException e) {
+            throw new RemoteException("Internal server error");
         }
 
         try {
@@ -195,7 +233,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
     }
 
     private static PrivateKey loadPrivateKey() {
-        FileInputStream fis = null;
+        FileInputStream fis;
         try {
             fis = new FileInputStream("src/main/resources/keystoreserver.jks");
             KeyStore keystore = KeyStore.getInstance("JKS");

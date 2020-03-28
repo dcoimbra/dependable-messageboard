@@ -10,11 +10,11 @@ import java.util.List;
 public interface ForumInterface extends Remote {
     Response register(PublicKey pubKey) throws RemoteException;
     // TODO: change from List<Announcement> to list<ID>
-    Response post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws RemoteException;
+    Response post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException;
     // TODO: change from List<Announcement> to list<ID>
-    Response postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, String signature) throws RemoteException;
+    Response postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException;
 
-    Response read(PublicKey senderPubKey, PublicKey pubKey, int number, String signature) throws RemoteException;
+    Response read(PublicKey senderPubKey, PublicKey pubKey, int number, byte[] signature) throws RemoteException;
 
-    Response readGeneral(PublicKey senderPubKey, int number, String signature) throws RemoteException;
+    Response readGeneral(PublicKey senderPubKey, int number, byte[] signature) throws RemoteException;
 }
