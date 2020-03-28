@@ -38,7 +38,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      */
     public synchronized Response register(PublicKey pubKey) throws RemoteException {
         if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-            throw new RemoteException(pubKey.toString() + " already registered.");
+            throw new RemoteException(pubKey.getEncoded() + " already registered.");
         }
 
         String text;
@@ -73,7 +73,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      */
     public synchronized Response post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
         if (!verifyRegistered(pubKey)) {
-            throw new RemoteException(pubKey.toString() + " does not exist");
+            throw new RemoteException(pubKey.getEncoded() + " does not exist");
         }
 
         List<Object> toSerialize = new ArrayList<>();
@@ -102,7 +102,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             throw new RemoteException(e.getMessage());
         }
 
-        System.out.println(pubKey.toString() + " just posted in their board");
+        System.out.println(pubKey.getEncoded() + " just posted in their board");
 
         PrivateKey privKey = loadPrivateKey();
         if(privKey == null) throw new RemoteException("Internal server error");
@@ -120,7 +120,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      */
     public synchronized Response postGeneral(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
         if (!verifyRegistered(pubKey)) {
-            throw new RemoteException(pubKey.toString() + " does not exist");
+            throw new RemoteException(pubKey.getEncoded() + " does not exist");
         }
 
         List<Object> toSerialize = new ArrayList<>();
@@ -147,7 +147,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             throw new RemoteException(e.getMessage());
         }
 
-        System.out.println(pubKey.toString() + " just posted in the general board");
+        System.out.println(pubKey.getEncoded() + " just posted in the general board");
 
         PrivateKey privKey = loadPrivateKey();
         if(privKey == null) throw new RemoteException("Internal server error");
@@ -167,7 +167,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         Account account = _accounts.get(pubKey);
 
         if (account == null) {
-            throw new RemoteException(pubKey.toString() + " does not exist");
+            throw new RemoteException(pubKey.getEncoded() + " does not exist");
         }
 
         List<Object> toSerialize = new ArrayList<>();
@@ -189,7 +189,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             if(privKey == null) throw new RemoteException("Internal server error");
 
             List<Announcement> list = account.read(number);
-            System.out.println("Reading " + list.size() + " posts from " + pubKey.toString() + "'s board");
+            System.out.println("Reading " + list.size() + " posts from " + pubKey.getEncoded() + "'s board");
 
             return new Response(list, null, privKey);
         } catch (IllegalArgumentException iae) {
