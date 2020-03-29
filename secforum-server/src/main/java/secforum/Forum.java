@@ -5,11 +5,13 @@ import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -156,11 +158,11 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
-                throw new RemoteException("Security error");
+                throw new RemoteException("Security error.");
             }
             return verifyAnnouncements(a);
         } catch (IOException e) {
-            throw new RemoteException("Internal server error");
+            throw new RemoteException("Security error.");
         } catch (IllegalArgumentException e) {
             _accounts.get(pubKey).setNonce();
             throw new RemoteException("One of the quoted announcements does not exist");
@@ -198,7 +200,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                 throw new RemoteException("Security error.");
             }
         } catch (IOException e) {
-            throw new RemoteException("Internal server error");
+            throw new RemoteException("Security error.");
         }
 
         _accounts.get(senderPubKey).setNonce();
@@ -242,7 +244,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                 throw new RemoteException("Security error.");
             }
         } catch (IOException e) {
-            throw new RemoteException("Internal server error");
+            throw new RemoteException("Security error.");
         }
 
         _accounts.get(senderPubKey).setNonce();
@@ -262,7 +264,20 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         }
     }
 
-    private static PrivateKey loadPrivateKey() {
+    protected PublicKey loadPublicKey()  {
+        try {
+            FileInputStream fis = new FileInputStream("src/main/resources/keystoreserver.jks");
+            KeyStore keystore = KeyStore.getInstance("JKS");
+            keystore.load(fis, ("server").toCharArray());
+            Certificate cert = keystore.getCertificate("server");
+            return cert.getPublicKey();
+        } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private PrivateKey loadPrivateKey() {
         FileInputStream fis;
         try {
             fis = new FileInputStream("src/main/resources/keystoreserver.jks");
