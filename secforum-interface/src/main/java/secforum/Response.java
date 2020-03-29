@@ -1,6 +1,6 @@
 package secforum;
 
-import security.Signing_RSA;
+import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class Response implements Serializable {
         }
         try {
             messageBytes = Utils.serializeMessage(toSerialize);
-            _signature = Signing_RSA.sign(messageBytes, privKey);
+            _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
         } catch (IOException e) {
             e.printStackTrace();
         }

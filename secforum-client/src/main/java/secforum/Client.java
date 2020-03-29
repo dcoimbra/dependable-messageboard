@@ -1,6 +1,6 @@
 package secforum;
 
-import security.Signing_RSA;
+import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.*;
@@ -100,7 +100,7 @@ public class Client {
                         toSerialize.add(_manager.getClientNonce(_publicKey));
 
                         messageBytes = Utils.serializeMessage(toSerialize);
-                        signature = Signing_RSA.sign(messageBytes, privateKey);
+                        signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
                         _manager.setClientNonce(_publicKey);
@@ -125,7 +125,7 @@ public class Client {
                         toSerialize.add(_manager.getClientNonce(_publicKey));
 
                         messageBytes = Utils.serializeMessage(toSerialize);
-                        signature = Signing_RSA.sign(messageBytes, privateKey);
+                        signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
                         _manager.setClientNonce(_publicKey);
@@ -158,7 +158,7 @@ public class Client {
                         toSerialize.add(_manager.getClientNonce(_publicKey));
 
                         messageBytes = Utils.serializeMessage(toSerialize);
-                        signature = Signing_RSA.sign(messageBytes, privateKey);
+                        signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
                         _manager.setClientNonce(_publicKey);
@@ -179,7 +179,7 @@ public class Client {
                         toSerialize.add(_manager.getClientNonce(_publicKey));
 
                         messageBytes = Utils.serializeMessage(toSerialize);
-                        signature = Signing_RSA.sign(messageBytes, privateKey);
+                        signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.readGeneral(_publicKey, nAnnouncement, signature);
                         _manager.setClientNonce(_publicKey);
@@ -214,7 +214,7 @@ public class Client {
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
 
-            if(Signing_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
+            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
                 System.out.println(res.getResponse());
             }
             else {
@@ -235,7 +235,7 @@ public class Client {
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
 
-            if(Signing_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
+            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
 
                 for(Announcement a : res.getAnnouncements()) {
                     System.out.println(a);

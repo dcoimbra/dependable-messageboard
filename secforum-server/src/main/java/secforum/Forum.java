@@ -1,7 +1,7 @@
 package secforum;
 
-import security.Hashing_SHA256;
-import security.Signing_RSA;
+import security.HashingMD5;
+import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.FileInputStream;
@@ -89,7 +89,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            if (!Signing_RSA.verify(messageBytes, signature, pubKey)) {
+            if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 throw new RemoteException("post: Security error.");
             }
 
@@ -146,7 +146,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            if (!Signing_RSA.verify(messageBytes, signature, pubKey)) {
+            if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 throw new RemoteException("post: Security error.");
             }
 
@@ -202,7 +202,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            if (!Signing_RSA.verify(messageBytes, signature, senderPubKey)) {
+            if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
                 throw new RemoteException("post: Security error.");
             }
         } catch (IOException e) {
@@ -242,7 +242,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            if (!Signing_RSA.verify(messageBytes, signature, senderPubKey)) {
+            if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
                 throw new RemoteException("post: Security error.");
             }
         } catch (IOException e) {
@@ -298,14 +298,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
     private Announcement announcementExists(String id) throws IllegalArgumentException {
         for(Map.Entry<PublicKey, Account> entry : _accounts.entrySet()) {
             for(Announcement announcement : entry.getValue().getBoardAnnouncements()) {
-                if(Hashing_SHA256.equals(id, announcement.getId())) {
+                if(HashingMD5.equals(id, announcement.getId())) {
                     return announcement;
                 }
             }
         }
 
         for(Announcement announcement : _generalBoard.getAnnouncements()) {
-            if(Hashing_SHA256.equals(id, announcement.getId())) {
+            if(HashingMD5.equals(id, announcement.getId())) {
                 return announcement;
             }
         }
