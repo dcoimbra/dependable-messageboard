@@ -31,10 +31,7 @@ public class Client {
             _publicKey = Utils.loadPublicKey(id);
             System.out.println(_publicKey);
 
-            FileInputStream fin = new FileInputStream("src/main/resources/server.cer");
-            CertificateFactory f = CertificateFactory.getInstance("X.509");
-            X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
-            _serverKey = certificate.getPublicKey();
+            _serverKey = Utils.loadPublicKeyFromCerificate("src/main/resources/server.cer");
 
             _forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");
             System.out.println("Found server");

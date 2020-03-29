@@ -1,12 +1,11 @@
 package security;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.List;
 
 public class Utils {
@@ -25,6 +24,13 @@ public class Utils {
         keystore.load(fis, ("client" + id).toCharArray());
         Certificate cert = keystore.getCertificate("client" + id);
         return cert.getPublicKey();
+    }
+
+    public static PublicKey loadPublicKeyFromCerificate(String filename) throws FileNotFoundException, CertificateException {
+        FileInputStream fin = new FileInputStream(filename);
+        CertificateFactory f = CertificateFactory.getInstance("X.509");
+        X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
+        return certificate.getPublicKey();
     }
 
     public static byte[] serialize(Object obj) {
