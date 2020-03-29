@@ -3,7 +3,7 @@ package secforum;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import security.Signing_RSA;
+import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class AnnouncementTest {
             toSerialize.add(_manager.getClientNonce(_publicKey));
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
 
-            _signature = Signing_RSA.sign(messageBytes, privateKey);
+            _signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
         } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
             e.printStackTrace();
         }
@@ -67,7 +67,7 @@ public class AnnouncementTest {
             toSerialize.add(_timestamp);
             toSerialize.add(_manager.getClientNonce(_publicKey));
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            assertTrue(Signing_RSA.verify(messageBytes, _signature, _publicKey));
+            assertTrue(SigningSHA256_RSA.verify(messageBytes, _signature, _publicKey));
 
         } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException e) {
             fail();
@@ -110,25 +110,5 @@ public class AnnouncementTest {
     public void invalidAnnouncementNullQuotedAnnouncements() {
         assertThrows(IllegalArgumentException.class,
                 () -> new Announcement(_publicKey, _message, null, _timestamp, _signature, _counter));
-    }
-
-    @Test
-    public void unsecureAnnouncement() {
-        try {
-            PublicKey pubKey = Utils.loadPublicKey("2");
-            _announcement = new Announcement(pubKey, _message, _quotedAnnouncements, _timestamp, _signature, _counter);
-
-            List<Object> toSerialize = new ArrayList<>();
-            toSerialize.add(pubKey);
-            toSerialize.add(_message);
-            toSerialize.add(_quotedAnnouncements);
-            toSerialize.add(_timestamp);
-            toSerialize.add(_manager.getClientNonce(_publicKey));
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            assertFalse(Signing_RSA.verify(messageBytes, _signature, _publicKey));
-
-        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException e) {
-            fail();
-        }
     }
 }

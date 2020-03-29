@@ -243,7 +243,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
             if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
-                throw new RemoteException("post: Security error.");
+                throw new RemoteException("readGeneral: Security error.");
             }
         } catch (IOException e) {
             throw new RemoteException("Internal server error");

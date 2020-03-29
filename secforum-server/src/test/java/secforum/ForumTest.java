@@ -7,15 +7,12 @@ import org.junit.jupiter.api.Test;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.security.*;
-import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,7 +23,8 @@ public class ForumTest {
     private String _message;
     private List<String> _quotedAnnouncements;
     private LocalDateTime _timestamp;
-    private byte[] _signature;
+    private byte[] _signaturePost;
+    private byte[] _signatureRead;
     private static PrivateKey _privKey1;
     private static PrivateKey _privKey2;
 
@@ -61,19 +59,27 @@ public class ForumTest {
 
             _forum.register(_pubKey1);
 
-            _message = "";
+            _message = "ola";
             _quotedAnnouncements = new ArrayList<>();
             _timestamp = LocalDateTime.now();
 
-            List<Object> toSerialize = new ArrayList<>();
-            toSerialize.add(_pubKey1);
-            toSerialize.add(_message);
-            toSerialize.add(_quotedAnnouncements);
-            toSerialize.add(_timestamp);
-            toSerialize.add(_forum.getAccounts().get(_pubKey1).getNonce());
+            List<Object> toSerializePost = new ArrayList<>();
+            toSerializePost.add(_pubKey1);
+            toSerializePost.add(_message);
+            toSerializePost.add(_quotedAnnouncements);
+            toSerializePost.add(_timestamp);
+            toSerializePost.add(_forum.getAccounts().get(_pubKey1).getNonce());
 
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            _signature = SigningSHA256_RSA.sign(messageBytes, _privKey1);
+            List<Object> toSerializeRead = new ArrayList<>();
+            toSerializeRead.add(_pubKey1);
+            toSerializeRead.add(_pubKey2);
+            toSerializeRead.add(1);
+
+            byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+            byte[] messageBytesRead = Utils.serializeMessage(toSerializePost);
+            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 
         } catch (IOException e) {
             fail();
@@ -99,9 +105,64 @@ public class ForumTest {
     @Test
     public void postValidTest() {
         try {
-            Response res = _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signature);
+            Response res = _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
             assertNull(res.getAnnouncements());
             assertEquals("Successfully uploaded the post", res.getResponse());
+
+        } catch (RemoteException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void invalidPostNotRegistered() {
+       assertThrows(RemoteException.class, () -> _forum.post(_pubKey2, _message, _quotedAnnouncements, _timestamp, _signaturePost));
+    }
+
+    @Test
+    public void invalidPostAnnouncementDoesNotExist() {
+        List<String> wrongQuotedAnnouncements = new ArrayList<String>();
+        wrongQuotedAnnouncements.add("a");
+        assertThrows(RemoteException.class, () -> _forum.post(_pubKey1, _message, wrongQuotedAnnouncements, _timestamp, _signaturePost));
+    }
+
+    @Test
+    public void postGeneralValidTest() {
+        try {
+            Response res = _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            assertNull(res.getAnnouncements());
+            assertEquals("Successfully uploaded the post", res.getResponse());
+
+        } catch (RemoteException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void invalidPostGeneralNotRegistered() {
+        assertThrows(RemoteException.class, () -> _forum.postGeneral(_pubKey2, _message, _quotedAnnouncements, _timestamp, _signaturePost));
+    }
+
+    @Test
+    public void invalidPostGeneralAnnouncementDoesNotExist() {
+        List<String> wrongQuotedAnnouncements = new ArrayList<String>();
+        wrongQuotedAnnouncements.add("a");
+        assertThrows(RemoteException.class, () -> _forum.postGeneral(_pubKey1, _message, wrongQuotedAnnouncements, _timestamp, _signaturePost));
+    }
+
+    @Test
+    public void validRead() {
+        try {
+            _forum.register(_pubKey2);
+            Announcement a = new Announcement(_pubKey2, _message, new ArrayList<>(), _timestamp, _signaturePost, 0);
+            _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            Response res = _forum.read(_pubKey1, _pubKey2, 1, _signatureRead);
+            assertNull(res.getResponse());
+            Announcement received = res.getAnnouncements().get(0);
+            assertEquals(a.getId(), received.getId());
+            assertEquals(a.getMessage(), received.getId());
+            assertEquals(a.getPubKey(), received.getPubKey());
+            assertEquals(a.nQuotedAnnouncements(), received.nQuotedAnnouncements());
 
         } catch (RemoteException e) {
             fail();
@@ -114,6 +175,6 @@ public class ForumTest {
         _message = null;
         _quotedAnnouncements = null;
         _timestamp = null;
-        _signature = null;
+        _signaturePost = null;
     }
 }
