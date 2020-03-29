@@ -71,7 +71,7 @@ public class SigningSHA256_RSATests {
     void verifySignedDataSize(){
 
         byte[] signed = SigningSHA256_RSA.sign(txt, privKey1);
-        assertTrue(signed.length == 256);    // RSA 2048 => encrypted data always with 256 bytes
+        assertEquals(256, signed.length);    // RSA 2048 => encrypted data always with 256 bytes
     }
 
 

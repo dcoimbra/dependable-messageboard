@@ -3,15 +3,12 @@ package secforum;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
-import java.io.*;
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +20,6 @@ public class Client {
     private PublicKey _serverKey;
     private ForumInterface _forum;
     private Scanner _keyboardSc;
-    private NonceManager _manager;
 
     public Client(String id) {
         try {
@@ -35,13 +31,8 @@ public class Client {
 
             _forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");
             System.out.println("Found server");
-
-            _manager = new NonceManager();
-            System.out.println("Loaded nonce manager");
-        } catch (RemoteException | NotBoundException | MalformedURLException e) {
+        } catch (NotBoundException | NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException e) {
             System.out.println(e.getMessage());
-        } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException e) {
-            e.printStackTrace();
         }
 
         _keyboardSc = new Scanner(System.in);
@@ -56,7 +47,6 @@ public class Client {
             System.out.println("1 - register\n2 - post\n3 - read\n4 - postGeneral\n5 - readGeneral\n6 - exit");
 
             try {
-
                 command = Integer.parseInt(_keyboardSc.nextLine());
                 List<String> quotedAnnouncements;
                 PrivateKey privateKey;
@@ -65,12 +55,12 @@ public class Client {
                 List<Object> toSerialize;
                 byte[] signature;
                 byte[] messageBytes;
+                Integer nonce;
 
                 switch (command) {
                     case 1: // register
-
                         res = _forum.register(_publicKey);
-                        verifyResponse(res);
+                        verifyResponse(res, 0);
                         break;
 
                     case 2: // post
@@ -78,10 +68,10 @@ public class Client {
                         message = _keyboardSc.nextLine();
 
                         quotedAnnouncements = new ArrayList<>();
-                        System.out.println("Enter the number of announcements to be quoted:");
-                        nAnnouncement = Integer.parseInt(_keyboardSc.nextLine());
 
-                        for(int i = 0; i < nAnnouncement; i++) {
+                        nAnnouncement = requestInt("Enter the number of announcements to be quoted:");
+
+                        for (int i = 0; i < nAnnouncement; i++) {
                             System.out.println("(" + i + 1 + ") Enter the announcement ID:");
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
@@ -89,20 +79,20 @@ public class Client {
                         timestamp = LocalDateTime.now();
                         privateKey = Utils.loadPrivateKey(_id);
 
+                        nonce = verifyNonce(_forum.getNonce(_publicKey));
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(message);
                         toSerialize.add(quotedAnnouncements);
                         toSerialize.add(timestamp);
-                        toSerialize.add(_manager.getClientNonce(_publicKey));
+                        toSerialize.add(nonce);
 
                         messageBytes = Utils.serializeMessage(toSerialize);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
-                        _manager.setClientNonce(_publicKey);
 
-                        verifyResponse(res);
+                        verifyResponse(res, nonce + 1);
 
                         break;
 
@@ -112,22 +102,22 @@ public class Client {
 
                         publicKey = Utils.loadPublicKey(id);
                         privateKey = Utils.loadPrivateKey(_id);
-                        System.out.println("Enter the number of announcements:");
-                        nAnnouncement = Integer.parseInt(_keyboardSc.nextLine());
 
+                        nAnnouncement = requestInt("Enter the number of announcements to read:");
+
+                        nonce = verifyNonce(_forum.getNonce(_publicKey));
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(publicKey);
                         toSerialize.add(nAnnouncement);
-                        toSerialize.add(_manager.getClientNonce(_publicKey));
+                        toSerialize.add(nonce);
 
                         messageBytes = Utils.serializeMessage(toSerialize);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
-                        _manager.setClientNonce(_publicKey);
 
-                        verifyAnnouncements(res);
+                        verifyAnnouncements(res, nonce + 1);
 
                         break;
 
@@ -136,8 +126,8 @@ public class Client {
                         message = _keyboardSc.nextLine();
 
                         quotedAnnouncements = new ArrayList<>();
-                        System.out.println("Enter the number of announcements to be quoted:");
-                        nAnnouncement = Integer.parseInt(_keyboardSc.nextLine());
+
+                        nAnnouncement = requestInt("Enter the number of announcements to be quoted:");
 
                         for(int i = 0; i < nAnnouncement; i++) {
                             System.out.println("(" + i + 1 + ") Enter the announcement ID:");
@@ -147,66 +137,91 @@ public class Client {
                         timestamp = LocalDateTime.now();
                         privateKey = Utils.loadPrivateKey(_id);
 
+                        nonce = verifyNonce(_forum.getNonce(_publicKey));
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(message);
                         toSerialize.add(quotedAnnouncements);
                         toSerialize.add(timestamp);
-                        toSerialize.add(_manager.getClientNonce(_publicKey));
+                        toSerialize.add(nonce);
 
                         messageBytes = Utils.serializeMessage(toSerialize);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
-                        _manager.setClientNonce(_publicKey);
 
-                        verifyResponse(res);
+                        verifyResponse(res, nonce + 1);
 
                         break;
 
                     case 5: // readGeneral
-                        System.out.println("Enter the number of announcements:");
-                        nAnnouncement = Integer.parseInt(_keyboardSc.nextLine());
+                        nAnnouncement = requestInt("Enter the number of announcements to read:");
 
                         privateKey = Utils.loadPrivateKey(_id);
-
+                        nonce = verifyNonce(_forum.getNonce(_publicKey));
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(nAnnouncement);
-                        toSerialize.add(_manager.getClientNonce(_publicKey));
+                        toSerialize.add(nonce);
 
                         messageBytes = Utils.serializeMessage(toSerialize);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.readGeneral(_publicKey, nAnnouncement, signature);
-                        _manager.setClientNonce(_publicKey);
-
-                        verifyAnnouncements(res);
-
+                        verifyAnnouncements(res, nonce + 1);
                         break;
 
                     case 6: // exit
                         System.out.println("Thank you for using the app");
-                        System.exit(0);
+                        return;
 
                     default:
                         System.out.println("ERROR. Must be between 1 and 6");
                         break;
                 }
             } catch (NumberFormatException e) {
-                System.out.println("ERROR. Must be number");
+                System.out.println("ERROR. Must be integer.");
             } catch (RemoteException e) {
-                System.out.println(e.detail);
+                System.out.println(e.detail.toString());
             } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private void verifyResponse(Response res) {
+    private int requestInt(String prompt) throws NumberFormatException {
+        int input;
+        do {
+            System.out.println(prompt);
+            input = Integer.parseInt(_keyboardSc.nextLine());
+        } while (input < 0);
+
+        return input;
+    }
+
+    private Integer verifyNonce(NonceResponse res) {
+        List<Object> toSerialize = new ArrayList<>();
+        toSerialize.add(res.getNonce());
+        try {
+            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+
+            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
+               return res.getNonce();
+            }
+            else {
+                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        throw new IllegalArgumentException("Nonce not returned");
+    }
+
+    private void verifyResponse(Response res, Integer nonce) {
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(res.getResponse());
-        toSerialize.add(_manager.getClientNonce(_publicKey));
+        toSerialize.add(nonce);
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
@@ -220,14 +235,12 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        _manager.setClientNonce(_publicKey);
     }
 
-    private void verifyAnnouncements(Response res) {
+    private void verifyAnnouncements(Response res, Integer nonce) {
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(res.getAnnouncements());
-        toSerialize.add(_manager.getClientNonce(_publicKey));
+        toSerialize.add(nonce);
 
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
@@ -245,8 +258,6 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        _manager.setClientNonce(_publicKey);
     }
 
     public static void main(String[] args) {

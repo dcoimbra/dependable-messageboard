@@ -8,6 +8,8 @@ import java.util.List;
 
 /** Forum remote interface. */
 public interface ForumInterface extends Remote {
+    NonceResponse getNonce(PublicKey pubKey) throws RemoteException;
+
     Response register(PublicKey pubKey) throws RemoteException;
 
     Response post(PublicKey pubKey, String message, List<String> ids, LocalDateTime timestamp, byte[] signature) throws RemoteException;

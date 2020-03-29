@@ -1,7 +1,6 @@
 package secforum;
 
 import java.io.*;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
@@ -10,16 +9,6 @@ public class ForumServer {
     private static Forum _forum;
     private static String _filename = "src/main/resources/forum.ser";
     private static String _backup = "src/main/resources/forum_backup.ser";
-
-
-    public ForumServer() throws RemoteException {
-
-        try {
-            ForumServer.readForum();
-        } catch (FileNotFoundException e) {
-            _forum = new Forum();
-        }
-    }
 
     public static Forum getForum() {
         return _forum;
@@ -79,8 +68,11 @@ public class ForumServer {
         System.out.println("Main OK");
 
         try {
-            ForumServer server = new ForumServer();
-
+            try {
+                ForumServer.readForum();
+            } catch (FileNotFoundException e) {
+                _forum = new Forum();
+            }
             Registry rmiRegistry = LocateRegistry.createRegistry(registryPort);
             rmiRegistry.rebind("forum", ForumServer.getForum());
 

@@ -14,21 +14,30 @@ public class Response implements Serializable {
     private String _response;
     private byte[] _signature;
 
-    public Response(List<Announcement> announcements, String response, PrivateKey privKey, Integer nonce) {
+
+    public Response(List<Announcement> announcements, PrivateKey privKey, Integer nonce) {
         _announcements = announcements;
-        _response = response;
 
         List<Object> toSerialize = new ArrayList<>();
         byte[] messageBytes;
+        toSerialize.add(announcements);
+        toSerialize.add(nonce);
 
-        if(response == null) {
-            toSerialize.add(announcements);
-            toSerialize.add(nonce);
+        try {
+            messageBytes = Utils.serializeMessage(toSerialize);
+            _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        else if(announcements == null) {
-            toSerialize.add(response);
-            toSerialize.add(nonce);
-        }
+    }
+
+    public Response(String response, PrivateKey privKey, Integer nonce) {
+        _response = response;
+        List<Object> toSerialize = new ArrayList<>();
+        byte[] messageBytes;
+        toSerialize.add(response);
+        toSerialize.add(nonce);
+
         try {
             messageBytes = Utils.serializeMessage(toSerialize);
             _signature = SigningSHA256_RSA.sign(messageBytes, privKey);

@@ -25,7 +25,7 @@ public class Announcement implements Serializable {
      * @param pubKey The author of the message
      * @param message The message to be posted
      * @param quotedAnnouncements List of announcements that were referred to
-     * @param signature
+     * @param signature Signature of the author
      * @throws IllegalArgumentException if a message is longer than 255 characters ot if any of the arguments are null
      */
     public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, byte[] signature, int counter) throws IllegalArgumentException {
@@ -57,6 +57,10 @@ public class Announcement implements Serializable {
         return _pubKey;
     }
 
+    public byte[] getSignature() {
+        return _signature;
+    }
+
     public int nQuotedAnnouncements() {
         return _quotedAnnouncements.size();
     }
@@ -65,21 +69,21 @@ public class Announcement implements Serializable {
     public String toString() {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("ID: " + _id);
-        builder.append("\nAuthor's pubKey:\n" + _pubKey);
-        builder.append("\nPublished time: " + _timestamp);
+        builder.append("ID: ").append(_id);
+        builder.append("\nAuthor's pubKey:\n").append(_pubKey);
+        builder.append("\nPublished time: ").append(_timestamp);
         builder.append("\nQuoted Announcements: ");
 
         if(_quotedAnnouncements.size() > 0) {
             for(Announcement a : _quotedAnnouncements) {
-                builder.append(a._id + "; ");
+                builder.append(a._id).append("; ");
             }
         }
         else {
             builder.append("none");
         }
 
-        builder.append("\nMessage: " + _message + "\n");
+        builder.append("\nMessage: ").append(_message).append("\n");
 
         return builder.toString();
     }

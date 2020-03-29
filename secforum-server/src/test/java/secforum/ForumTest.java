@@ -27,6 +27,7 @@ public class ForumTest {
     private byte[] _signatureRead;
     private static PrivateKey _privKey1;
     private static PrivateKey _privKey2;
+    private byte[] _signatureReadGeneral;
 
     @BeforeAll
     public static void generate() {
@@ -82,6 +83,14 @@ public class ForumTest {
             byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
             _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey2);
 
+            List<Object> toSerializeReadGeneral = new ArrayList<>();
+            toSerializeReadGeneral.add(_pubKey2);
+            toSerializeReadGeneral.add(1);
+            toSerializeReadGeneral.add(1);
+
+            byte[] messageBytesReadGeneral = Utils.serializeMessage(toSerializeReadGeneral);
+            _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey2);
+
         } catch (IOException e) {
             fail();
         }
@@ -122,7 +131,7 @@ public class ForumTest {
 
     @Test
     public void invalidPostAnnouncementDoesNotExist() {
-        List<String> wrongQuotedAnnouncements = new ArrayList<String>();
+        List<String> wrongQuotedAnnouncements = new ArrayList<>();
         wrongQuotedAnnouncements.add("a");
         assertThrows(RemoteException.class, () -> _forum.post(_pubKey1, _message, wrongQuotedAnnouncements, _timestamp, _signaturePost));
     }
@@ -146,7 +155,7 @@ public class ForumTest {
 
     @Test
     public void invalidPostGeneralAnnouncementDoesNotExist() {
-        List<String> wrongQuotedAnnouncements = new ArrayList<String>();
+        List<String> wrongQuotedAnnouncements = new ArrayList<>();
         wrongQuotedAnnouncements.add("a");
         assertThrows(RemoteException.class, () -> _forum.postGeneral(_pubKey1, _message, wrongQuotedAnnouncements, _timestamp, _signaturePost));
     }
@@ -169,7 +178,72 @@ public class ForumTest {
             assertEquals(a.getMessage(), received.getMessage());
 
         } catch (RemoteException e) {
-            System.out.println(e.detail);
+            fail();
+        }
+    }
+
+    @Test
+    public void invalidReadNegative() {
+        try {
+            _forum.register(_pubKey2);
+            _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            assertThrows(RemoteException.class, () -> _forum.read(_pubKey2, _pubKey1, -1, _signatureRead));
+        } catch (RemoteException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void invalidReadTooHigh() {
+        try {
+            _forum.register(_pubKey2);
+            _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            assertThrows(RemoteException.class, () -> _forum.read(_pubKey2, _pubKey1, 2, _signatureRead));
+        } catch (RemoteException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void validReadGeneral() {
+        try {
+            _forum.register(_pubKey2);
+            _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            Response res = _forum.readGeneral(_pubKey2, 1, _signatureReadGeneral);
+
+            assertNull(res.getResponse());
+
+            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost, 0);
+            Announcement received = res.getAnnouncements().get(0);
+
+            assertEquals(a.getId(), received.getId());
+            assertEquals(a.getPubKey(), received.getPubKey());
+            assertEquals(a.nQuotedAnnouncements(), received.nQuotedAnnouncements());
+            assertEquals(a.getMessage(), received.getMessage());
+
+        } catch (RemoteException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void invalidReadGeneralNegative() {
+        try {
+            _forum.register(_pubKey2);
+            _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            assertThrows(RemoteException.class, () -> _forum.readGeneral(_pubKey2, -1, _signatureRead));
+        } catch (RemoteException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void invalidReadGeneralTooHigh() {
+        try {
+            _forum.register(_pubKey2);
+            _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            assertThrows(RemoteException.class, () -> _forum.readGeneral(_pubKey2, 2, _signatureRead));
+        } catch (RemoteException e) {
             fail();
         }
     }
