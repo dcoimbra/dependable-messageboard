@@ -3,12 +3,10 @@ package security;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Base64;
 
 
-public class Hashing_SHA256 {
-
+public class HashingMD5 {
     private static final String ALGORITHM = "MD5";
 
 
