@@ -45,7 +45,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         String text;
         PrivateKey privKey = loadPrivateKey();
 
-        if(privKey == null) throw new RemoteException("Internal server error");
+        if (privKey == null) throw new RemoteException("Internal server error");
 
         try {
             synchronized (this) {
@@ -311,5 +311,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         }
 
         return null;
+    }
+
+    protected Map<PublicKey, Account> getAccounts() {
+        return _accounts;
     }
 }
