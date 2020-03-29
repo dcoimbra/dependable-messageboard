@@ -39,7 +39,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             return new NonceResponse(_accounts.get(pubKey).getNonce(), privKey);
         }
 
-        throw new RemoteException("You need to be registered.");
+        throw new RemoteException("This public key needs to be registered.");
     }
 
 
@@ -51,7 +51,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      */
     public synchronized Response register(PublicKey pubKey) throws RemoteException {
         if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-            throw new RemoteException(pubKey + " already registered.");
+            throw new RemoteException("This public key is already registered.");
         }
 
         String text;
@@ -94,7 +94,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
         account.post(message, announcements, timestamp, signature);
 
-        System.out.println(pubKey + " just posted in their board");
+        System.out.println("Someone just posted in their board");
 
         PrivateKey privKey = loadPrivateKey();
         if(privKey == null) throw new RemoteException("Internal server error");
@@ -125,7 +125,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         _accounts.get(pubKey).setNonce();
         _generalBoard.post(pubKey, message, announcements, timestamp, signature, _accounts.get(pubKey).getCounter());
 
-        System.out.println(pubKey + " just posted in the general board");
+        System.out.println("Someone just posted in the general board");
 
         PrivateKey privKey = loadPrivateKey();
         if(privKey == null) throw new RemoteException("Internal server error");
@@ -144,7 +144,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
     private List<Announcement> verifyPost(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
         if(verifyRegistered(pubKey)) {
-            throw new RemoteException(pubKey + " does not exist");
+            throw new RemoteException("This public key needs to be registered.");
         }
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(pubKey);
@@ -156,14 +156,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
-                throw new RemoteException("post: Security error.");
+                throw new RemoteException("Security error");
             }
             return verifyAnnouncements(a);
         } catch (IOException e) {
             throw new RemoteException("Internal server error");
         } catch (IllegalArgumentException e) {
             _accounts.get(pubKey).setNonce();
-            throw new RemoteException("Quoted announcement does not exist");
+            throw new RemoteException("One of the quoted announcements does not exist");
         }
     }
 
@@ -177,13 +177,13 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      */
     public Response read(PublicKey senderPubKey, PublicKey pubKey, int number, byte[] signature) throws RemoteException {
         if (number < 0) {
-            throw new RemoteException("read: number must not be less than zero");
+            throw new RemoteException("The number of announcements to read must not be less than zero");
         }
 
         Account account = _accounts.get(pubKey);
 
         if (account == null) {
-            throw new RemoteException(pubKey + " does not exist");
+            throw new RemoteException("This public key needs to be registered.");
         }
 
         List<Object> toSerialize = new ArrayList<>();
@@ -195,7 +195,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
             if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
-                throw new RemoteException("post: Security error.");
+                throw new RemoteException("Security error.");
             }
         } catch (IOException e) {
             throw new RemoteException("Internal server error");
@@ -208,7 +208,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             if(privKey == null) throw new RemoteException("Internal server error");
 
             List<Announcement> list = account.read(number);
-            System.out.println("Reading " + list.size() + " posts from " + pubKey + "'s board");
+            System.out.println("Reading " + list.size() + " posts from someone's board");
 
             Response res = new Response(list, privKey, _accounts.get(senderPubKey).getNonce());
             _accounts.get(senderPubKey).setNonce();
@@ -227,6 +227,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      */
     public Response readGeneral(PublicKey senderPubKey, int number, byte[] signature) throws RemoteException {
 
+        if (number < 0) {
+            throw new RemoteException("The number of announcements to read must not be less than zero");
+        }
+
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(senderPubKey);
         toSerialize.add(number);
@@ -235,7 +239,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
             if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
-                throw new RemoteException("readGeneral: Security error.");
+                throw new RemoteException("Security error.");
             }
         } catch (IOException e) {
             throw new RemoteException("Internal server error");
