@@ -5,7 +5,7 @@
 
 package secforum;
 
-import security.Hashing_SHA256;
+import security.HashingMD5;
 
 import java.io.Serializable;
 import java.security.PublicKey;
@@ -37,7 +37,7 @@ public class Announcement implements Serializable {
             throw new IllegalArgumentException("Message cannot have more than 255 characters");
         }
 
-        _id = Hashing_SHA256.getDigest(pubKey.toString() + counter);
+        _id = HashingMD5.getDigest(pubKey.toString() + counter);
         _pubKey = pubKey;
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
