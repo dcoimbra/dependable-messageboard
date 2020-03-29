@@ -70,16 +70,17 @@ public class ForumTest {
             toSerializePost.add(_timestamp);
             toSerializePost.add(_forum.getAccounts().get(_pubKey1).getNonce());
 
-            List<Object> toSerializeRead = new ArrayList<>();
-            toSerializeRead.add(_pubKey1);
-            toSerializeRead.add(_pubKey2);
-            toSerializeRead.add(1);
-
             byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
-            byte[] messageBytesRead = Utils.serializeMessage(toSerializePost);
-            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+            List<Object> toSerializeRead = new ArrayList<>();
+            toSerializeRead.add(_pubKey2);
+            toSerializeRead.add(_pubKey1);
+            toSerializeRead.add(1);
+            toSerializeRead.add(1);
+
+            byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
+            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey2);
 
         } catch (IOException e) {
             fail();
@@ -154,17 +155,21 @@ public class ForumTest {
     public void validRead() {
         try {
             _forum.register(_pubKey2);
-            Announcement a = new Announcement(_pubKey2, _message, new ArrayList<>(), _timestamp, _signaturePost, 0);
             _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
-            Response res = _forum.read(_pubKey1, _pubKey2, 1, _signatureRead);
+            Response res = _forum.read(_pubKey2, _pubKey1, 1, _signatureRead);
+
             assertNull(res.getResponse());
+
+            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost, 0);
             Announcement received = res.getAnnouncements().get(0);
+
             assertEquals(a.getId(), received.getId());
-            assertEquals(a.getMessage(), received.getId());
             assertEquals(a.getPubKey(), received.getPubKey());
             assertEquals(a.nQuotedAnnouncements(), received.nQuotedAnnouncements());
+            assertEquals(a.getMessage(), received.getMessage());
 
         } catch (RemoteException e) {
+            System.out.println(e.detail);
             fail();
         }
     }
