@@ -1,8 +1,10 @@
 package secforum;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import security.Signing_RSA;
+import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.FileNotFoundException;
@@ -19,35 +21,45 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ForumTest {
     private Forum _forum;
-    private PublicKey _pubKey1;
-    private PublicKey _pubKey2;
+    private static PublicKey _pubKey1;
+    private static PublicKey _pubKey2;
     private String _message;
     private List<String> _quotedAnnouncements;
     private LocalDateTime _timestamp;
     private byte[] _signature;
-    private PrivateKey _privKey1;
-    private PrivateKey _privKey2;
+    private static PrivateKey _privKey1;
+    private static PrivateKey _privKey2;
+
+    @BeforeAll
+    public static void generate() {
+       try {
+           KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+
+           SecureRandom random1 = SecureRandom.getInstance("SHA1PRNG");
+           SecureRandom random2 = SecureRandom.getInstance("SHA1PRNG");
+
+           generator.initialize(2048, random1);
+
+           KeyPair pair1 = generator.generateKeyPair();
+           _pubKey1 = pair1.getPublic();
+           _privKey1 = pair1.getPrivate();
+
+           generator.initialize(2048, random2);
+
+           KeyPair pair2 = generator.generateKeyPair();
+           _pubKey2 = pair2.getPublic();
+           _privKey2 = pair2.getPrivate();
+       } catch (NoSuchAlgorithmException e) {
+           fail();
+       }
+    }
 
     @BeforeEach
     public void setUp() {
         try {
             _forum = new Forum();
 
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-            SecureRandom random1 = SecureRandom.getInstance("SHA1PRNG");
-            SecureRandom random2 = SecureRandom.getInstance("SHA1PRNG");
-
-            generator.initialize(2048, random1);
-
-            KeyPair pair1 = generator.generateKeyPair();
-            _pubKey1 = pair1.getPublic();
-            _privKey1 = pair1.getPrivate();
-
-            generator.initialize(2048, random2);
-
-            KeyPair pair2 = generator.generateKeyPair();
-            _pubKey2 = pair2.getPublic();
-            _privKey2 = pair2.getPrivate();
+            _forum.register(_pubKey1);
 
             _message = "";
             _quotedAnnouncements = new ArrayList<>();
@@ -61,9 +73,9 @@ public class ForumTest {
             toSerialize.add(_forum.getAccounts().get(_pubKey1).getNonce());
 
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            _signature = Signing_RSA.sign(messageBytes, _privKey1);
+            _signature = SigningSHA256_RSA.sign(messageBytes, _privKey1);
 
-        } catch (NoSuchAlgorithmException | IOException e) {
+        } catch (IOException e) {
             fail();
         }
     }
@@ -71,7 +83,7 @@ public class ForumTest {
     @Test
     public void registerValidTest() {
         try {
-            Response res = _forum.register(_pubKey1);
+            Response res = _forum.register(_pubKey2);
             assertNull(res.getAnnouncements());
             assertEquals("Registered successfully", res.getResponse());
         } catch (RemoteException e) {
@@ -81,20 +93,27 @@ public class ForumTest {
 
     @Test
     public void registerAlreadyRegistered() {
-        try {
-            _forum.register(_pubKey1);
-        } catch (RemoteException e) {
-            fail();
-        }
-
         assertThrows(RemoteException.class, () -> _forum.register(_pubKey1));
     }
 
+    @Test
     public void postValidTest() {
         try {
-            _forum.register(_pubKey1);
+            Response res = _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signature);
+            assertNull(res.getAnnouncements());
+            assertEquals("Successfully uploaded the post", res.getResponse());
+
         } catch (RemoteException e) {
             fail();
         }
+    }
+
+    @AfterEach
+    public void tearDown() {
+        _forum = null;
+        _message = null;
+        _quotedAnnouncements = null;
+        _timestamp = null;
+        _signature = null;
     }
 }
