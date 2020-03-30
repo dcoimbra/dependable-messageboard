@@ -40,7 +40,7 @@ public class Account implements Serializable {
     }
 
     public void post(String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws IllegalArgumentException {
-        _announcementsBoard.post(_pubKey, message, a, timestamp, signature, _counter);
+        _announcementsBoard.post(_pubKey, message, a, timestamp, _nonce, signature, _counter);
         _counter++;
     }
 

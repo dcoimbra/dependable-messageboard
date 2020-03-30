@@ -18,6 +18,7 @@ public class Announcement implements Serializable {
     private String _message;
     private List<Announcement> _quotedAnnouncements;
     private LocalDateTime _timestamp;
+    private Integer _nonce;
     private byte[] _signature;
 
     /**
@@ -28,7 +29,7 @@ public class Announcement implements Serializable {
      * @param signature Signature of the author
      * @throws IllegalArgumentException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, byte[] signature, int counter) throws IllegalArgumentException {
+    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, Integer nonce, byte[] signature, int counter) throws IllegalArgumentException {
         if (message == null || pubKey == null || quotedAnnouncements == null) {
             throw new IllegalArgumentException("Arguments cannot be null");
         }
@@ -42,6 +43,7 @@ public class Announcement implements Serializable {
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
         _timestamp = timestamp;
+        _nonce = nonce;
         _signature = signature;
     }
 

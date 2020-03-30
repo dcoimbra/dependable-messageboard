@@ -56,6 +56,7 @@ public class Client {
                 byte[] signature;
                 byte[] messageBytes;
                 Integer nonce;
+                String password;
 
                 switch (command) {
                     case 1: // register
@@ -77,7 +78,11 @@ public class Client {
                         }
 
                         timestamp = LocalDateTime.now();
-                        privateKey = Utils.loadPrivateKey(_id);
+
+                        System.out.println("Enter your private key password:");
+                        password = _keyboardSc.nextLine();
+                        privateKey = Utils.loadPrivateKey(_id, password);
+                        password = null;
 
                         nonce = verifyNonce(_forum.getNonce(_publicKey));
                         toSerialize = new ArrayList<>();
@@ -97,11 +102,15 @@ public class Client {
                         break;
 
                     case 3: // read
-                        System.out.println("Enter client id:");
+                        System.out.println("Enter the id of the client you want to read from:");
                         id = _keyboardSc.nextLine();
 
                         publicKey = Utils.loadPublicKey(id);
-                        privateKey = Utils.loadPrivateKey(_id);
+
+                        System.out.println("Enter your private key password:");
+                        password = _keyboardSc.nextLine();
+                        privateKey = Utils.loadPrivateKey(_id, password);
+                        password = null;
 
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
@@ -135,7 +144,11 @@ public class Client {
                         }
 
                         timestamp = LocalDateTime.now();
-                        privateKey = Utils.loadPrivateKey(_id);
+
+                        System.out.println("Enter your private key password:");
+                        password = _keyboardSc.nextLine();
+                        privateKey = Utils.loadPrivateKey(_id, password);
+                        password = null;
 
                         nonce = verifyNonce(_forum.getNonce(_publicKey));
                         toSerialize = new ArrayList<>();
@@ -157,7 +170,11 @@ public class Client {
                     case 5: // readGeneral
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
-                        privateKey = Utils.loadPrivateKey(_id);
+                        System.out.println("Enter your private key password:");
+                        password = _keyboardSc.nextLine();
+                        privateKey = Utils.loadPrivateKey(_id, password);
+                        password = null;
+
                         nonce = verifyNonce(_forum.getNonce(_publicKey));
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);

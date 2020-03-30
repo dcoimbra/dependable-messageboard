@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.security.*;
@@ -169,7 +170,7 @@ public class ForumTest {
 
             assertNull(res.getResponse());
 
-            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost, 0);
+            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _timestamp, 0,_signaturePost, 0);
             Announcement received = res.getAnnouncements().get(0);
 
             assertEquals(a.getId(), received.getId());
@@ -213,7 +214,7 @@ public class ForumTest {
 
             assertNull(res.getResponse());
 
-            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost, 0);
+            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _timestamp, 0,_signaturePost, 0);
             Announcement received = res.getAnnouncements().get(0);
 
             assertEquals(a.getId(), received.getId());
@@ -255,5 +256,11 @@ public class ForumTest {
         _quotedAnnouncements = null;
         _timestamp = null;
         _signaturePost = null;
+
+        File forumser = new File("src/main/resources/forum.ser");
+        File forumbackupser = new File("src/main/resources/forum_backup.ser");
+
+        forumser.delete();
+        forumbackupser.delete();
     }
 }

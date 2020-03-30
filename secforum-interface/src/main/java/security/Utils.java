@@ -9,11 +9,11 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 
 public class Utils {
-    public static PrivateKey loadPrivateKey(String id) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
+    public static PrivateKey loadPrivateKey(String id, String password) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
         FileInputStream fis = new FileInputStream("src/main/resources/keystoreclient" + id + ".jks");
         KeyStore keystore = KeyStore.getInstance("JKS");
-        keystore.load(fis, ("client" + id).toCharArray());
-        return (PrivateKey) keystore.getKey("client" + id, ("client" + id).toCharArray());
+        keystore.load(fis, password.toCharArray());
+        return (PrivateKey) keystore.getKey("client" + id, password.toCharArray());
     }
 
     public static PublicKey loadPublicKey(String id) throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException {

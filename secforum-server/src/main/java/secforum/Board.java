@@ -13,9 +13,9 @@ public class Board implements Serializable {
         _announcements = new ArrayList<>();
     }
 
-    public void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature, int counter) throws IllegalArgumentException {
+    public void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, Integer nonce, byte[] signature, int counter) throws IllegalArgumentException {
 
-        Announcement announcement = new Announcement(pubKey, message, a, timestamp, signature, counter);
+        Announcement announcement = new Announcement(pubKey, message, a, timestamp, nonce, signature, counter);
         _announcements.add(0, announcement);
     }
 

@@ -92,9 +92,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         List<Announcement> announcements = verifyPost(pubKey, message, a, timestamp, signature);
 
         Account account = _accounts.get(pubKey);
-        account.setNonce();
-
         account.post(message, announcements, timestamp, signature);
+        account.setNonce();
 
         System.out.println("Someone just posted in their board");
 
@@ -124,8 +123,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
     public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
         List<Announcement> announcements = verifyPost(pubKey, message, a, timestamp, signature);
 
+        _generalBoard.post(pubKey, message, announcements, timestamp, _accounts.get(pubKey).getNonce(), signature, _accounts.get(pubKey).getCounter());
         _accounts.get(pubKey).setNonce();
-        _generalBoard.post(pubKey, message, announcements, timestamp, signature, _accounts.get(pubKey).getCounter());
 
         System.out.println("Someone just posted in the general board");
 
