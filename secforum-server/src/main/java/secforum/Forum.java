@@ -1,6 +1,6 @@
 package secforum;
 
-import security.HashingMD5;
+import security.HashingSHA256;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
@@ -329,14 +329,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
     private Announcement announcementExists(String id) throws IllegalArgumentException {
         for(Map.Entry<PublicKey, Account> entry : _accounts.entrySet()) {
             for(Announcement announcement : entry.getValue().getBoardAnnouncements()) {
-                if(HashingMD5.equals(id, announcement.getId())) {
+                if(HashingSHA256.equals(id, announcement.getId())) {
                     return announcement;
                 }
             }
         }
 
         for(Announcement announcement : _generalBoard.getAnnouncements()) {
-            if(HashingMD5.equals(id, announcement.getId())) {
+            if(HashingSHA256.equals(id, announcement.getId())) {
                 return announcement;
             }
         }

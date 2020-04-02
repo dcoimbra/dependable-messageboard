@@ -5,7 +5,7 @@
 
 package secforum;
 
-import security.HashingMD5;
+import security.HashingSHA256;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -39,7 +39,7 @@ public class Announcement implements Serializable {
             throw new RemoteException("Message cannot have more than 255 characters");
         }
 
-        _id = HashingMD5.getDigest(pubKey.toString() + counter);
+        _id = HashingSHA256.getDigest(pubKey.toString() + counter);
         _pubKey = pubKey;
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;

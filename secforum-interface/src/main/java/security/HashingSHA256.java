@@ -6,7 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 
-public class HashingMD5 {
+public class HashingSHA256 {
     private static final String ALGORITHM = "SHA-256";
 
 
