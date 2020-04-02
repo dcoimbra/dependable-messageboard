@@ -9,7 +9,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -50,13 +49,11 @@ public class Client {
                 command = Integer.parseInt(_keyboardSc.nextLine());
                 List<String> quotedAnnouncements;
                 PrivateKey privateKey;
-                LocalDateTime timestamp;
                 Response res;
                 byte[] signature;
                 byte[] messageBytes;
                 String password;
                 Integer nonce;
-
 
                 switch (command) {
                     case 1: // register
@@ -78,8 +75,6 @@ public class Client {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        timestamp = LocalDateTime.now();
-
                         System.out.println("Enter your private key password:");
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
@@ -88,10 +83,10 @@ public class Client {
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);
 
-                        messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, timestamp, nonce);
+                        messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
-                        res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
+                        res = _forum.post(_publicKey, message, quotedAnnouncements, signature);
                         System.out.println("Verifying post");
                         res.verify(_serverKey,nonce + 1);
                         break;
@@ -133,8 +128,6 @@ public class Client {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        timestamp = LocalDateTime.now();
-
                         System.out.println("Enter your private key password:");
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
@@ -143,11 +136,10 @@ public class Client {
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);
 
-                        messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, timestamp, nonce);
+                        messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
-                        res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
-
+                        res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, signature);
                         res.verify(_serverKey,nonce + 1);
                         break;
 

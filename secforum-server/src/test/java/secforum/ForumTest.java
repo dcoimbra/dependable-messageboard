@@ -25,7 +25,6 @@ public class ForumTest {
     private static PrivateKey _privKey2;
 
     private String _message;
-    private LocalDateTime _timestamp;
     private List<String> _quotedAnnouncements;
     private List<String> _wrongQuotedAnnouncements;
     private int _read;
@@ -78,7 +77,6 @@ public class ForumTest {
             byte[] messageBytes;
 
             _message = "ola";
-            _timestamp = LocalDateTime.now();
             _quotedAnnouncements = new ArrayList<>();
             _wrongQuotedAnnouncements = new ArrayList<>();
             _wrongQuotedAnnouncements.add("a");
@@ -88,7 +86,7 @@ public class ForumTest {
             _nonce = 1;
             _counter = _nonce - 1;
 
-            messageBytes = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _timestamp, _forum.getAccounts().get(_pubKey1).getNonce());
+            messageBytes = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _forum.getAccounts().get(_pubKey1).getNonce());
             _signaturePost = SigningSHA256_RSA.sign(messageBytes, _privKey1);
 
             messageBytes = Utils.serializeMessage(_pubKey2, _pubKey1, _read, _nonce);
@@ -97,7 +95,7 @@ public class ForumTest {
             byte[] messageBytesReadGeneral = Utils.serializeMessage(_pubKey2, _read, _nonce);
             _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey2);
 
-            messageBytes = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _forum.getAccounts().get(_pubKey1).getNonce());
+            messageBytes = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _forum.getAccounts().get(_pubKey1).getNonce());
             _signaturePostInvalid = SigningSHA256_RSA.sign(messageBytes, _privKey1);
 
             messageBytes = Utils.serializeMessage(_pubKey2, _pubKey1, _high, _nonce);
@@ -132,7 +130,7 @@ public class ForumTest {
 
     @Test
     public void postValidTest() {
-        Response res = _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+        Response res = _forum.post(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
         assertNull(res.getAnnouncements());
         assertNull(res.getException());
         assertEquals("Successfully uploaded the post.", res.getResponse());
@@ -140,19 +138,19 @@ public class ForumTest {
 
     @Test
     public void invalidPostNotRegistered() {
-        Response res = _forum.post(_pubKey2, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+        Response res = _forum.post(_pubKey2, _message, _quotedAnnouncements, _signaturePost);
         assertEquals("This public key is not registered.", res.getException().getMessage());
     }
 
     @Test
     public void invalidPostAnnouncementDoesNotExist() {
-        Response res = _forum.post(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _signaturePostInvalid);
+        Response res = _forum.post(_pubKey1, _message, _wrongQuotedAnnouncements, _signaturePostInvalid);
         assertEquals("Announcement a does not exist", res.getException().getMessage());
     }
 
     @Test
     public void postGeneralValidTest() {
-        Response res = _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+        Response res = _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
         assertNull(res.getAnnouncements());
         assertNull(res.getException());
         assertEquals("Successfully uploaded the post.", res.getResponse());
@@ -160,13 +158,13 @@ public class ForumTest {
 
     @Test
     public void invalidPostGeneralNotRegistered() {
-        Response res = _forum.postGeneral(_pubKey2, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+        Response res = _forum.postGeneral(_pubKey2, _message, _quotedAnnouncements, _signaturePost);
         assertEquals("This public key is not registered.", res.getException().getMessage());
     }
 
     @Test
     public void invalidPostGeneralAnnouncementDoesNotExist() {
-        Response res = _forum.postGeneral(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _signaturePostInvalid);
+        Response res = _forum.postGeneral(_pubKey1, _message, _wrongQuotedAnnouncements, _signaturePostInvalid);
         assertEquals("Announcement a does not exist", res.getException().getMessage());
     }
 
@@ -174,13 +172,13 @@ public class ForumTest {
     public void validRead() {
         try {
             _forum.register(_pubKey2);
-            _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            _forum.post(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
             Response res = _forum.read(_pubKey2, _pubKey1, _read, _signatureRead);
 
             assertNull(res.getResponse());
             assertNull(res.getException());
 
-            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _timestamp, _nonce - 1,_signaturePost, _counter);
+            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _nonce - 1,_signaturePost, _counter);
             Announcement received = res.getAnnouncements().get(0);
 
             assertEquals(a.getId(), received.getId());
@@ -195,7 +193,7 @@ public class ForumTest {
     @Test
     public void invalidReadNegative() {
         _forum.register(_pubKey2);
-        _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+        _forum.post(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
 
         Response res = _forum.read(_pubKey2, _pubKey1, _negative, _signatureReadNegative);
         assertEquals("The number of announcements to read must not be less than zero", res.getException().getMessage());
@@ -204,7 +202,7 @@ public class ForumTest {
     @Test
     public void invalidReadTooHigh() {
         _forum.register(_pubKey2);
-        _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+        _forum.post(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
 
         Response res = _forum.read(_pubKey2, _pubKey1, _high, _signatureReadTooHigh);
         assertEquals("Board does not have that many announcements", res.getException().getMessage());
@@ -214,13 +212,13 @@ public class ForumTest {
     public void validReadGeneral() {
         try {
             _forum.register(_pubKey2);
-            _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+            _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
             Response res = _forum.readGeneral(_pubKey2, _read, _signatureReadGeneral);
 
             assertNull(res.getResponse());
             assertNull(res.getException());
 
-            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _timestamp, _nonce - 1,_signaturePost, _counter);
+            Announcement a = new Announcement(_pubKey1, _message, new ArrayList<>(), _nonce - 1,_signaturePost, _counter);
             Announcement received = res.getAnnouncements().get(0);
 
             assertEquals(a.getId(), received.getId());
@@ -236,7 +234,7 @@ public class ForumTest {
     @Test
     public void invalidReadGeneralNegative() {
         _forum.register(_pubKey2);
-        _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+        _forum.post(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
 
         Response res = _forum.readGeneral(_pubKey2, _negative, _signatureReadGeneralNegative);
         assertEquals("The number of announcements to read must not be less than zero", res.getException().getMessage());
@@ -245,7 +243,7 @@ public class ForumTest {
     @Test
     public void invalidReadGeneralTooHigh() {
         _forum.register(_pubKey2);
-        _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+        _forum.post(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
 
         Response res = _forum.readGeneral(_pubKey2, _high, _signatureReadGeneralTooHigh);
         assertEquals("Board does not have that many announcements", res.getException().getMessage());
@@ -256,7 +254,6 @@ public class ForumTest {
         _forum = null;
         _message = null;
         _quotedAnnouncements = null;
-        _timestamp = null;
         _signaturePost = null;
 
         File forum = new File("src/main/resources/forum.ser");

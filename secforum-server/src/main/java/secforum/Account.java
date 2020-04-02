@@ -40,8 +40,8 @@ public class Account implements Serializable {
         return _announcementsBoard.getAnnouncements();
     }
 
-    public void post(String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
-        _announcementsBoard.post(_pubKey, message, a, timestamp, _nonce, signature, _counter);
+    public void post(String message, List<Announcement> a, byte[] signature) throws RemoteException {
+        _announcementsBoard.post(_pubKey, message, a, _nonce, signature, _counter);
         _counter++;
     }
 

@@ -12,7 +12,6 @@ import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +49,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
     public Response getNonce(PublicKey pubKey) {
         if(!verifyRegistered(pubKey)){
-            System.out.println("Client got nonce = " + _accounts.get(pubKey).getNonce());
             return new NonceResponse(_privKey, _accounts.get(pubKey).getNonce());
         }
 
@@ -92,23 +90,22 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @param signature signature of the sender
      */
-    public synchronized Response post(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) {
+    public synchronized Response post(PublicKey pubKey, String message, List<String> a, byte[] signature) {
         Account account = _accounts.get(pubKey);
         if(account == null) {
             return _notClient;
         }
 
         Response res;
-
         try {
-            byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, timestamp, account.getNonce());
+            byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce());
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 account.setNonce();
                 res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, account.getNonce());
             } else {
                 List<Announcement> announcements = verifyAnnouncements(a);
 
-                account.post(message, announcements, timestamp, signature);
+                account.post(message, announcements, signature);
                 System.out.println("Someone just posted in their board.");
 
                 account.setNonce();
@@ -133,7 +130,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @param signature of the sender
      */
-    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) {
+    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, byte[] signature) {
         Account account = _accounts.get(pubKey);
         if(account == null) {
             return _notClient;
@@ -141,14 +138,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
         Response res;
         try {
-            byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, timestamp, account.getNonce());
+            byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce());
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 account.setNonce();
                 res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, account.getNonce());
             } else {
                 List<Announcement> announcements = verifyAnnouncements(a);
 
-                _generalBoard.post(pubKey, message, announcements, timestamp, account.getNonce(), signature, account.getCounter());
+                _generalBoard.post(pubKey, message, announcements, account.getNonce(), signature, account.getCounter());
                 System.out.println("Someone just posted in the general board.");
 
                 account.setNonce();

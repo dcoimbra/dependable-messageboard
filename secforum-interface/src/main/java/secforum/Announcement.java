@@ -30,7 +30,7 @@ public class Announcement implements Serializable {
      * @param signature Signature of the author
      * @throws RemoteException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, Integer nonce, byte[] signature, int counter) throws RemoteException {
+    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, Integer nonce, byte[] signature, int counter) throws RemoteException {
         if (message == null || pubKey == null || quotedAnnouncements == null) {
             throw new RemoteException("Arguments cannot be null");
         }
@@ -43,7 +43,7 @@ public class Announcement implements Serializable {
         _pubKey = pubKey;
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
-        _timestamp = timestamp;
+        _timestamp = LocalDateTime.now();
         _nonce = nonce;
         _signature = signature;
     }

@@ -13,19 +13,6 @@ public abstract class Response implements Serializable {
     protected Integer _nonce;
     protected byte[] _signature;
 
-    public Response(Integer nonce, PrivateKey privKey, Object object) {
-        _nonce = nonce;
-
-        sign(object, privKey);
-    }
-
-    public Response(Integer nonce, PrivateKey privKey) {
-        _nonce = nonce;
-
-        byte[] messageBytes = Utils.serializeMessage(_nonce);
-        _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
-    }
-
     public Integer getNonce() { return _nonce; }
 
     public byte[] getSignature() {
@@ -42,10 +29,25 @@ public abstract class Response implements Serializable {
         return null;
     }
 
+    public Response(Integer nonce, PrivateKey privKey, Object object) {
+        _nonce = nonce;
+
+        sign(object, privKey);
+    }
+
+    public Response(Integer nonce, PrivateKey privKey) {
+        _nonce = nonce;
+
+        byte[] messageBytes = Utils.serializeMessage(_nonce);
+        _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
+    }
+
     protected void sign(Object object, PrivateKey privKey) {
         byte[] messageBytes = Utils.serializeMessage(object, _nonce);
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
+
+    public abstract void verify(PublicKey pubKey, Integer nonce) throws IllegalArgumentException;
 
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException {
         try {
@@ -58,6 +60,4 @@ public abstract class Response implements Serializable {
         }
         throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
     }
-
-    public abstract void verify(PublicKey pubKey, Integer nonce) throws IllegalArgumentException;
 }
