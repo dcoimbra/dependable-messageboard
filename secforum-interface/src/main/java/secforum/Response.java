@@ -73,10 +73,4 @@ public abstract class Response implements Serializable {
     }
 
     public abstract void verify(PublicKey pubKey, Integer nonce) throws IllegalArgumentException;
-
-    private byte[] serialize(Object object) throws IOException {
-        List<Object> toSerialize = Arrays.asList(object, _nonce);
-
-        return Utils.serializeMessage(toSerialize);
-    }
 }

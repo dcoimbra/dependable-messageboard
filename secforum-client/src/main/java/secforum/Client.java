@@ -224,48 +224,6 @@ public class Client {
         return input;
     }
 
-//    private void verifyResponse(Response res, Integer nonce) {
-//        List<Object> toSerialize = new ArrayList<>();
-//        toSerialize.add(res.getResponse());
-//        toSerialize.add(nonce);
-//
-//        try {
-//            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-//
-//            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
-//                System.out.println(res.getResponse());
-//            }
-//            else {
-//                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    private void verifyAnnouncements(Response res, Integer nonce) {
-//        List<Object> toSerialize = new ArrayList<>();
-//        toSerialize.add(res.getAnnouncements());
-//        toSerialize.add(nonce);
-//
-//        try {
-//            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-//
-//            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
-//
-//                for(Announcement a : res.getAnnouncements()) {
-//                    System.out.println(a);
-//                }
-//                System.out.println("Got " + res.getAnnouncements().size() + " announcements!\n");
-//            }
-//            else {
-//                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
     public static void main(String[] args) {
         Client c = new Client(args[0]);
         c.start();

@@ -10,5 +10,5 @@ public class NonceResponse extends Response {
     }
 
     @Override
-    public void verify(PublicKey pubKey, Integer nonce) { return; }
+    public void verify(PublicKey pubKey, Integer nonce) {}
 }
