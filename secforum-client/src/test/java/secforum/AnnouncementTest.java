@@ -36,13 +36,7 @@ public class AnnouncementTest {
             _counter = 0;
             PrivateKey privateKey = Utils.loadPrivateKey("1", "client1");
 
-            List<Object> toSerialize = new ArrayList<>();
-            toSerialize.add(_publicKey);
-            toSerialize.add(_message);
-            toSerialize.add(_quotedAnnouncements);
-            toSerialize.add(_timestamp);
-            toSerialize.add(_nonce);
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, _timestamp, _nonce);
 
             _signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
         } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
@@ -58,13 +52,7 @@ public class AnnouncementTest {
             assertEquals("", _announcement.getMessage());
             assertEquals(0, _announcement.nQuotedAnnouncements());
 
-            List<Object> toSerialize = new ArrayList<>();
-            toSerialize.add(_publicKey);
-            toSerialize.add(_message);
-            toSerialize.add(_quotedAnnouncements);
-            toSerialize.add(_timestamp);
-            toSerialize.add(_nonce);
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, _timestamp, _nonce);
             assertTrue(SigningSHA256_RSA.verify(messageBytes, _signature, _publicKey));
 
         } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException e) {

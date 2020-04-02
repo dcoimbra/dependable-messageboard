@@ -6,7 +6,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.List;
 
 public class Utils {
     public static PrivateKey loadPrivateKey(String id, String password) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
@@ -42,7 +41,7 @@ public class Utils {
         }
     }
 
-    public static byte[] serializeMessage(List<Object> parameters) throws IllegalArgumentException {
+    public static byte[] serializeMessage(Object... parameters) throws IllegalArgumentException {
         ByteArrayOutputStream messageBytes = new ByteArrayOutputStream();
 
         for (Object parameter : parameters) {

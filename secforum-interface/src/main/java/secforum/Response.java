@@ -3,13 +3,10 @@ package secforum;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public abstract class Response implements Serializable {
@@ -24,11 +21,8 @@ public abstract class Response implements Serializable {
 
     public Response(Integer nonce, PrivateKey privKey) {
         _nonce = nonce;
-        System.out.println("when creating, nonce = " + _nonce);
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(_nonce);
 
-        byte[] messageBytes = Utils.serializeMessage(toSerialize);
+        byte[] messageBytes = Utils.serializeMessage(_nonce);
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
@@ -49,20 +43,13 @@ public abstract class Response implements Serializable {
     }
 
     protected void sign(Object object, PrivateKey privKey) {
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(object);
-        toSerialize.add(_nonce);
-
-        byte[] messageBytes = Utils.serializeMessage(toSerialize);
+        byte[] messageBytes = Utils.serializeMessage(object, _nonce);
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException {
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(_nonce);
-        System.out.println("when verifying, nonce = " + _nonce);
         try {
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            byte[] messageBytes = Utils.serializeMessage(_nonce);
 
             if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) { return _nonce; }
 

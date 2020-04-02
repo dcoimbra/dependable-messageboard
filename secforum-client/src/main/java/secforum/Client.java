@@ -52,7 +52,6 @@ public class Client {
                 PrivateKey privateKey;
                 LocalDateTime timestamp;
                 Response res;
-                List<Object> toSerialize;
                 byte[] signature;
                 byte[] messageBytes;
                 String password;
@@ -89,14 +88,7 @@ public class Client {
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);
 
-                        toSerialize = new ArrayList<>();
-                        toSerialize.add(_publicKey);
-                        toSerialize.add(message);
-                        toSerialize.add(quotedAnnouncements);
-                        toSerialize.add(timestamp);
-                        toSerialize.add(nonce);
-
-                        messageBytes = Utils.serializeMessage(toSerialize);
+                        messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, timestamp, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
@@ -120,13 +112,7 @@ public class Client {
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);
 
-                        toSerialize = new ArrayList<>();
-                        toSerialize.add(_publicKey);
-                        toSerialize.add(publicKey);
-                        toSerialize.add(nAnnouncement);
-                        toSerialize.add(nonce);
-
-                        messageBytes = Utils.serializeMessage(toSerialize);
+                        messageBytes = Utils.serializeMessage(_publicKey, publicKey, nAnnouncement, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
@@ -157,14 +143,7 @@ public class Client {
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);
 
-                        toSerialize = new ArrayList<>();
-                        toSerialize.add(_publicKey);
-                        toSerialize.add(message);
-                        toSerialize.add(quotedAnnouncements);
-                        toSerialize.add(timestamp);
-                        toSerialize.add(nonce);
-
-                        messageBytes = Utils.serializeMessage(toSerialize);
+                        messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, timestamp, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
@@ -183,12 +162,7 @@ public class Client {
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);
 
-                        toSerialize = new ArrayList<>();
-                        toSerialize.add(_publicKey);
-                        toSerialize.add(nAnnouncement);
-                        toSerialize.add(nonce);
-
-                        messageBytes = Utils.serializeMessage(toSerialize);
+                        messageBytes = Utils.serializeMessage(_publicKey, nAnnouncement, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.readGeneral(_publicKey, nAnnouncement, signature);

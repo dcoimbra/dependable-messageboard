@@ -3,11 +3,8 @@ package secforum;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
-import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.List;
 
 public class WriteResponse extends Response {
     private String _response;
@@ -24,12 +21,9 @@ public class WriteResponse extends Response {
 
     @Override
     public void verify(PublicKey pubKey, Integer nonce) {
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(_response);
-        toSerialize.add(nonce);
 
         try {
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            byte[] messageBytes = Utils.serializeMessage(_response, nonce);
 
             if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
                 System.out.println(_response);
