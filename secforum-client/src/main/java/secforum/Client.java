@@ -24,8 +24,6 @@ public class Client {
         try {
             _id = id;
             _publicKey = Utils.loadPublicKey(id);
-            System.out.println(_publicKey);
-
             _serverKey = Utils.loadPublicKeyFromCerificate("src/main/resources/server.cer");
 
             _forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");

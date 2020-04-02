@@ -37,4 +37,7 @@ public class ReadResponse extends Response {
             throw new IllegalArgumentException("Nonce was not returned");
         }
     }
+
+    @Override
+    public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
 }
