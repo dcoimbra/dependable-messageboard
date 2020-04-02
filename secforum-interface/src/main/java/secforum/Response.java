@@ -28,12 +28,8 @@ public abstract class Response implements Serializable {
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(_nonce);
 
-        try {
-            byte[] messageBytes = serialize(toSerialize);
-            _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        byte[] messageBytes = Utils.serializeMessage(toSerialize);
+        _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
     public Integer getNonce() { return _nonce; }
@@ -57,12 +53,8 @@ public abstract class Response implements Serializable {
         toSerialize.add(object);
         toSerialize.add(_nonce);
 
-        try {
-            byte[] messageBytes = serialize(toSerialize);
-            _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        byte[] messageBytes = Utils.serializeMessage(toSerialize);
+        _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException {
@@ -86,6 +78,5 @@ public abstract class Response implements Serializable {
         List<Object> toSerialize = Arrays.asList(object, _nonce);
 
         return Utils.serializeMessage(toSerialize);
-
     }
 }

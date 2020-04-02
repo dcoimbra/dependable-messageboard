@@ -33,12 +33,12 @@ public class ExceptionResponse extends Response {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
 
             if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
-                System.out.println(_exception.getCause());
+                System.out.println(_exception.getMessage());
             } else {
                 throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
             }
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Nonce was not returned");
+            throw new IllegalArgumentException("Nonce was not returned:");
         }
     }
 }

@@ -67,7 +67,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         Response res;
 
         if(_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-            res = new ExceptionResponse(new RemoteException("This public key is already registered."), _privKey, _accounts.get(pubKey).getNonce());
+            res = new ExceptionResponse(new RemoteException("This public key is already registered."), _privKey, 0);
         } else {
             String text = "Registered successfully.";
             System.out.println("Someone was registered successfully.");

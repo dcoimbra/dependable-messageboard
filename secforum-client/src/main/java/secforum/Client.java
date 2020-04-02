@@ -55,8 +55,9 @@ public class Client {
                 List<Object> toSerialize;
                 byte[] signature;
                 byte[] messageBytes;
-                Integer nonce;
                 String password;
+                Integer nonce;
+
 
                 switch (command) {
                     case 1: // register
@@ -85,8 +86,10 @@ public class Client {
                         privateKey = Utils.loadPrivateKey(_id, password);
                         password = null;
 
+                        System.out.println("Verifying nonce");
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_publicKey);
+                        System.out.println("Nonce: " + nonce);
 
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
@@ -99,7 +102,7 @@ public class Client {
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
-
+                        System.out.println("Verifying post");
                         res.verify(_serverKey,nonce + 1);
                         break;
 
@@ -208,7 +211,7 @@ public class Client {
             } catch (RemoteException e) {
                 System.out.println(e.detail.toString());
             } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException | UnrecoverableKeyException | IllegalArgumentException e) {
-                e.printStackTrace();
+                System.out.println(e.getMessage());
             }
         }
     }
