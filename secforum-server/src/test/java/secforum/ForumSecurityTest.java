@@ -8,7 +8,6 @@ import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.security.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ public class ForumSecurityTest {
     @BeforeEach
     public void setUp() {
         try {
-            _forum = new Forum();
+            _forum = new Forum("server");
 
             _forum.register(_pubKey1);
 
@@ -74,20 +73,26 @@ public class ForumSecurityTest {
 
     @Test
     public void getNonceSignatureTest() {
-        try {
-            NonceResponse res = _forum.getNonce(_pubKey1);
-            List<Object> toSerialize = new ArrayList<>();
-            toSerialize.add(res.getNonce());
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            assertTrue(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _forum.loadPublicKey()));
-        } catch (IOException e) {
+        Response res = _forum.getNonce(_pubKey1);
+
+        try{
+            Integer nonce = res.verifyNonce(_forum.loadPublicKey());
+            assertEquals(1, nonce);
+        } catch (IllegalArgumentException iae) {
+            System.out.println(iae.getMessage());
             fail();
         }
+
+//            List<Object> toSerialize = new ArrayList<>();
+//            toSerialize.add(res.getNonce());
+//            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+//            assertTrue(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _forum.loadPublicKey()));
     }
 
     @Test
     public void getNonceNotRegistered() {
-        assertThrows(RemoteException.class, () -> _forum.getNonce(_pubKey2));
+         Response res = _forum.getNonce(_pubKey2);
+         assertEquals("This public key is not registered.", res.getException().getMessage());
     }
 
     @Test
@@ -104,8 +109,10 @@ public class ForumSecurityTest {
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
             _forum.post(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost);
-            assertThrows(RemoteException.class, () -> _forum.post(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost));
-        } catch (IOException e) {
+            Response res = _forum.post(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost);
+
+            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
             fail();
         }
     }
@@ -124,8 +131,10 @@ public class ForumSecurityTest {
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
             _forum.postGeneral(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost);
-            assertThrows(RemoteException.class, () -> _forum.postGeneral(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost));
-        } catch (IOException e) {
+            Response res = _forum.postGeneral(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost);
+
+            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
             fail();
         }
     }
@@ -143,8 +152,10 @@ public class ForumSecurityTest {
             _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 
             _forum.read(_pubKey1, _pubKey1, 0, _signatureRead);
-            assertThrows(RemoteException.class, () -> _forum.read(_pubKey1, _pubKey1, 0, _signatureRead));
-        } catch (IOException e) {
+            Response res = _forum.read(_pubKey1, _pubKey1, 0, _signatureRead);
+
+            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
             fail();
         }
     }
@@ -160,8 +171,10 @@ public class ForumSecurityTest {
             byte[] messageBytesReadGeneral = Utils.serializeMessage(toSerializeReadGeneral);
             _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey1);
             _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
-            assertThrows(RemoteException.class, () -> _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral));
-        } catch (IOException e) {
+            Response res = _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
+
+            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
             fail();
         }
     }
@@ -178,8 +191,10 @@ public class ForumSecurityTest {
         try {
             byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-            assertThrows(RemoteException.class, () ->_forum.post(_pubKey1, "attack", new ArrayList<>(), _timestamp, _signaturePost));
-        } catch (IOException e) {
+            Response res = _forum.post(_pubKey1, "attack", new ArrayList<>(), _timestamp, _signaturePost);
+
+            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
             fail();
         }
     }
@@ -196,8 +211,10 @@ public class ForumSecurityTest {
         try {
             byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-            assertThrows(RemoteException.class, () ->_forum.postGeneral(_pubKey1, "attack", new ArrayList<>(), _timestamp, _signaturePost));
-        } catch (IOException e) {
+            Response res = _forum.postGeneral(_pubKey1, "attack", new ArrayList<>(), _timestamp, _signaturePost);
+
+            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
             fail();
         }
     }
@@ -213,8 +230,10 @@ public class ForumSecurityTest {
         try {
             byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
             _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
-            assertThrows(RemoteException.class, () -> _forum.read(_pubKey1, _pubKey1, 404, _signatureRead));
-        } catch (IOException e) {
+            Response res = _forum.read(_pubKey1, _pubKey1, 404, _signatureRead);
+
+            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
             fail();
         }
     }
@@ -229,8 +248,10 @@ public class ForumSecurityTest {
         try {
             byte[] messageBytesReadGeneral = Utils.serializeMessage(toSerializeReadGeneral);
             _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey1);
-            assertThrows(RemoteException.class, () -> _forum.readGeneral(_pubKey1, 404, _signatureReadGeneral));
-        } catch (IOException e) {
+            Response res = _forum.readGeneral(_pubKey1, 404, _signatureReadGeneral);
+
+            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
             fail();
         }
     }

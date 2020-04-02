@@ -7,7 +7,7 @@ import java.util.Base64;
 
 
 public class HashingMD5 {
-    private static final String ALGORITHM = "MD5";
+    private static final String ALGORITHM = "SHA-256";
 
 
     /**

@@ -5,7 +5,6 @@ import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -23,25 +22,38 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
     private Map<PublicKey, Account> _accounts;
     private Board _generalBoard;
+    private PrivateKey _privKey;
+    private final ExceptionResponse _notClient;
 
     /**
      *
      * @throws RemoteException if there is a remote error
      */
-    public Forum() throws RemoteException {
+    public Forum(String password) throws RemoteException {
         _accounts = new HashMap<>();
         _generalBoard = new Board();
+
+        FileInputStream fis;
+        try {
+            fis = new FileInputStream("src/main/resources/keystoreserver.jks");
+            KeyStore keystore = KeyStore.getInstance("JKS");
+            keystore.load(fis, (password).toCharArray());
+            _privKey = (PrivateKey) keystore.getKey("server", (password).toCharArray());
+        } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | NoSuchAlgorithmException | IOException e) {
+            System.out.println("Server could not load private key. SHUTTING DOWN!!!");
+            System.exit(0);
+        }
+
+        _notClient = new ExceptionResponse(new RemoteException("This public key is not registered."), _privKey, 0);
     }
 
 
-    public NonceResponse getNonce(PublicKey pubKey) throws RemoteException {
-        if (!verifyRegistered(pubKey)) {
-            PrivateKey privKey = loadPrivateKey();
-            if (privKey == null) throw new RemoteException("Internal server error");
-            return new NonceResponse(_accounts.get(pubKey).getNonce(), privKey);
+    public Response getNonce(PublicKey pubKey) {
+        if(!verifyRegistered(pubKey)){
+            return new NonceResponse(_privKey, _accounts.get(pubKey).getNonce());
         }
 
-        throw new RemoteException("This public key needs to be registered.");
+        return _notClient;
     }
 
 
@@ -51,33 +63,26 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @throws RemoteException if the user is already registered
      * @return Response positive if successfully registered
      */
-    public synchronized Response register(PublicKey pubKey) throws RemoteException {
-        if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-            throw new RemoteException("This public key is already registered.");
+    public synchronized Response register(PublicKey pubKey) {
+        Response res;
+
+        if(_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
+            res = new ExceptionResponse(new RemoteException("This public key is already registered."), _privKey, _accounts.get(pubKey).getNonce());
+        } else {
+            String text = "Registered successfully.";
+            System.out.println("Someone was registered successfully.");
+
+            res = new WriteResponse(text, _privKey, _accounts.get(pubKey).getNonce());
         }
-
-        String text;
-        PrivateKey privKey = loadPrivateKey();
-
-        if (privKey == null) throw new RemoteException("Internal server error");
-
-        text = "Registered successfully";
-        System.out.println("Someone was registered successfully");
-
-        Response res = new Response(text, privKey, _accounts.get(pubKey).getNonce());
-        _accounts.get(pubKey).setNonce();
 
         try {
             ForumServer.writeForum(this);
         } catch (IOException e) {
-            throw new RemoteException("Internal server error");
+            res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, _accounts.get(pubKey).getNonce());
         }
 
+        _accounts.get(pubKey).setNonce();
         return res;
-    }
-
-    public boolean verifyRegistered(PublicKey pubKey) {
-         return !_accounts.containsKey(pubKey);
     }
 
     /**
@@ -88,27 +93,31 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param signature signature of the sender
      * @throws RemoteException if no account with this pubKey
      */
-    public synchronized Response post(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
-        List<Announcement> announcements = verifyPost(pubKey, message, a, timestamp, signature);
-
+    public synchronized Response post(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) {
         Account account = _accounts.get(pubKey);
-        account.post(message, announcements, timestamp, signature);
-        account.setNonce();
-
-        System.out.println("Someone just posted in their board");
-
-        PrivateKey privKey = loadPrivateKey();
-        if(privKey == null) throw new RemoteException("Internal server error");
-
-        Response res = new Response("Successfully uploaded the post", privKey, account.getNonce());
-        account.setNonce();
-
-        try {
-            ForumServer.writeForum(this);
-        } catch (IOException e) {
-            throw new RemoteException("Internal server error");
+        if(account == null) {
+            return _notClient;
         }
 
+        Response res;
+
+        try {
+            List<Announcement> announcements = getQuotedAnnouncements(pubKey, message, a, timestamp, signature);
+
+            account.post(message, announcements, timestamp, signature);
+            System.out.println("Someone just posted in their board.");
+
+            account.setNonce();
+            res = new WriteResponse("Successfully uploaded the post.", _privKey, account.getNonce());
+            ForumServer.writeForum(this);
+        } catch (RemoteException re) {
+            account.setNonce();
+            res = new ExceptionResponse(re, _privKey, account.getNonce());
+        } catch (IOException e) {
+            res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, account.getNonce());
+        }
+
+        account.setNonce();
         return res;
     }
 
@@ -120,52 +129,31 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param signature of the sender
      * @throws RemoteException if no account with this pubKey
      */
-    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
-        List<Announcement> announcements = verifyPost(pubKey, message, a, timestamp, signature);
+    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) {
+        Account account = _accounts.get(pubKey);
+        if(account == null) {
+            return _notClient;
+        }
 
-        _generalBoard.post(pubKey, message, announcements, timestamp, _accounts.get(pubKey).getNonce(), signature, _accounts.get(pubKey).getCounter());
-        _accounts.get(pubKey).setNonce();
-
-        System.out.println("Someone just posted in the general board");
-
-        PrivateKey privKey = loadPrivateKey();
-        if(privKey == null) throw new RemoteException("Internal server error");
-
-        Response res = new Response("Successfully uploaded the post", privKey, _accounts.get(pubKey).getNonce());
-        _accounts.get(pubKey).setNonce();
-
+        Response res;
         try {
+            List<Announcement> announcements = getQuotedAnnouncements(pubKey, message, a, timestamp, signature);
+
+            _generalBoard.post(pubKey, message, announcements, timestamp, account.getNonce(), signature, account.getCounter());
+            System.out.println("Someone just posted in the general board.");
+
+            account.setNonce();
+            res = new WriteResponse("Successfully uploaded the post.", _privKey, account.getNonce());
             ForumServer.writeForum(this);
-        } catch (IllegalArgumentException | IOException e) {
-            throw new RemoteException(e.getMessage());
+        } catch (RemoteException re) {
+            account.setNonce();
+            res = new ExceptionResponse(re, _privKey, account.getNonce());
+        } catch (IOException ioe) {
+            res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, account.getNonce());
         }
 
+        account.setNonce();
         return res;
-    }
-
-    private List<Announcement> verifyPost(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
-        if(verifyRegistered(pubKey)) {
-            throw new RemoteException("This public key needs to be registered.");
-        }
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(pubKey);
-        toSerialize.add(message);
-        toSerialize.add(a);
-        toSerialize.add(timestamp);
-        toSerialize.add(_accounts.get(pubKey).getNonce());
-
-        try {
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
-                throw new RemoteException("Security error.");
-            }
-            return verifyAnnouncements(a);
-        } catch (IOException e) {
-            throw new RemoteException("Security error.");
-        } catch (IllegalArgumentException e) {
-            _accounts.get(pubKey).setNonce();
-            throw new RemoteException("One of the quoted announcements does not exist");
-        }
     }
 
     /**
@@ -176,47 +164,57 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @return Response read posts
      * @throws RemoteException if no account with this pubKey
      */
-    public Response read(PublicKey senderPubKey, PublicKey pubKey, int number, byte[] signature) throws RemoteException {
-        if (number < 0) {
-            throw new RemoteException("The number of announcements to read must not be less than zero");
+    public Response read(PublicKey senderPubKey, PublicKey pubKey, int number, byte[] signature) {
+        Account senderAccount = _accounts.get(senderPubKey);
+        if(senderAccount == null) {
+            return _notClient;
         }
 
-        Account account = _accounts.get(pubKey);
+        Response res;
 
-        if (account == null) {
-            throw new RemoteException("This public key needs to be registered.");
-        }
+        Account targetAccount = _accounts.get(pubKey);
+        if(targetAccount == null) {
+            senderAccount.setNonce();
+            res = new ExceptionResponse(new RemoteException("Target account does not exist."), _privKey, senderAccount.getNonce());
+        } else if (number < 0) {
+            senderAccount.setNonce();
+            res = new ExceptionResponse(new RemoteException("The number of announcements to read must not be less than zero"), _privKey, senderAccount.getNonce());
+        } else {
+            List<Object> toSerialize = new ArrayList<>();
+            toSerialize.add(senderPubKey);
+            toSerialize.add(pubKey);
+            toSerialize.add(number);
+            toSerialize.add(senderAccount.getNonce());
 
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(senderPubKey);
-        toSerialize.add(pubKey);
-        toSerialize.add(number);
-        toSerialize.add(_accounts.get(senderPubKey).getNonce());
-
-        try {
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
-                throw new RemoteException("Security error.");
+            byte[] messageBytes = new byte[0];
+            try {
+                messageBytes = Utils.serializeMessage(toSerialize);
+            } catch (IllegalArgumentException e) {
+                senderAccount.setNonce();
+                res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, senderAccount.getNonce());
             }
-        } catch (IOException e) {
-            throw new RemoteException("Security error.");
+
+            try {
+                if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
+                    senderAccount.setNonce();
+                    res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, senderAccount.getNonce());
+                } else {
+                    senderAccount.setNonce();
+                    List<Announcement> list = targetAccount.read(number);
+                    System.out.println("Reading " + list.size() + " posts from someone's board");
+
+                    res = new ReadResponse(list, _privKey, senderAccount.getNonce());
+                    ForumServer.writeForum(this);
+                }
+            } catch (RemoteException re) {
+                res = new ExceptionResponse(re, _privKey, senderAccount.getNonce());
+            } catch (IOException e) {
+                res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, senderAccount.getNonce());
+            }
         }
 
-        _accounts.get(senderPubKey).setNonce();
-
-        try {
-            PrivateKey privKey = loadPrivateKey();
-            if(privKey == null) throw new RemoteException("Internal server error");
-
-            List<Announcement> list = account.read(number);
-            System.out.println("Reading " + list.size() + " posts from someone's board");
-
-            Response res = new Response(list, privKey, _accounts.get(senderPubKey).getNonce());
-            _accounts.get(senderPubKey).setNonce();
-            return res;
-        } catch (IllegalArgumentException iae) {
-            throw new RemoteException(iae.getMessage());
-        }
+        senderAccount.setNonce();
+        return res;
     }
 
     /**
@@ -226,44 +224,56 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @return read posts
      * @throws RemoteException if trying to read more than total number of announcements
      */
-    public Response readGeneral(PublicKey senderPubKey, int number, byte[] signature) throws RemoteException {
-
-        if (number < 0) {
-            throw new RemoteException("The number of announcements to read must not be less than zero");
+    public Response readGeneral(PublicKey senderPubKey, int number, byte[] signature) {
+        Account senderAccount = _accounts.get(senderPubKey);
+        if(senderAccount == null) {
+            return _notClient;
         }
 
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(senderPubKey);
-        toSerialize.add(number);
-        toSerialize.add(_accounts.get(senderPubKey).getNonce());
+        Response res;
 
-        try {
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-            if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
-                throw new RemoteException("Security error.");
+        if(number < 0) {
+            senderAccount.setNonce();
+            res = new ExceptionResponse(new RemoteException("The number of announcements to read must not be less than zero"), _privKey, senderAccount.getNonce());
+        } else {
+            List<Object> toSerialize = new ArrayList<>();
+            toSerialize.add(senderPubKey);
+            toSerialize.add(number);
+            toSerialize.add(_accounts.get(senderPubKey).getNonce());
+
+            byte[] messageBytes = new byte[0];
+            try {
+                messageBytes = Utils.serializeMessage(toSerialize);
+            } catch (IllegalArgumentException e) {
+                senderAccount.setNonce();
+                res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, senderAccount.getNonce());
             }
-        } catch (IOException e) {
-            throw new RemoteException("Security error.");
+
+            try {
+                if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
+                    senderAccount.setNonce();
+                    res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, senderAccount.getNonce());
+                } else {
+                    senderAccount.setNonce();
+                    List<Announcement> list = _generalBoard.read(number);
+                    System.out.println("Reading " + list.size() + " posts from the general board");
+
+                    res = new ReadResponse(list, _privKey, senderAccount.getNonce());
+                    ForumServer.writeForum(this);
+                }
+            } catch (RemoteException re) {
+                res = new ExceptionResponse(re, _privKey, senderAccount.getNonce());
+            } catch (IOException e) {
+                res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, senderAccount.getNonce());
+            }
         }
 
-        _accounts.get(senderPubKey).setNonce();
 
-        try {
-            PrivateKey privKey = loadPrivateKey();
-            if(privKey == null) throw new RemoteException("Internal server error");
-
-            List<Announcement> list = _generalBoard.read(number);
-            System.out.println("Reading " + list.size() + " posts from the general board");
-
-            Response res = new Response(list, privKey, _accounts.get(senderPubKey).getNonce());
-            _accounts.get(senderPubKey).setNonce();
-            return res;
-        } catch (IllegalArgumentException iae) {
-            throw new RemoteException(iae.getMessage());
-        }
+        senderAccount.setNonce();
+        return res;
     }
 
-    protected PublicKey loadPublicKey()  {
+    protected PublicKey loadPublicKey() {
         try {
             FileInputStream fis = new FileInputStream("src/main/resources/keystoreserver.jks");
             KeyStore keystore = KeyStore.getInstance("JKS");
@@ -276,27 +286,37 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         return null;
     }
 
-    private PrivateKey loadPrivateKey() {
-        FileInputStream fis;
-        try {
-            fis = new FileInputStream("src/main/resources/keystoreserver.jks");
-            KeyStore keystore = KeyStore.getInstance("JKS");
-            keystore.load(fis, ("server").toCharArray());
-            return (PrivateKey) keystore.getKey("server", ("server").toCharArray());
-        } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | NoSuchAlgorithmException | IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public boolean verifyRegistered(PublicKey pubKey) {
+        return !_accounts.containsKey(pubKey);
     }
 
-    private List<Announcement> verifyAnnouncements(List<String> announcementIDs) throws IllegalArgumentException {
+    private List<Announcement> getQuotedAnnouncements(PublicKey pubKey, String message, List<String> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
+        List<Object> toSerialize = new ArrayList<>();
+        toSerialize.add(pubKey);
+        toSerialize.add(message);
+        toSerialize.add(a);
+        toSerialize.add(timestamp);
+        toSerialize.add(_accounts.get(pubKey).getNonce());
+
+        try {
+            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+            if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
+                throw new RemoteException("Security error. Message was altered.");
+            }
+            return verifyAnnouncements(a);
+        } catch(IllegalArgumentException iae) {
+            throw new RemoteException("Internal server error.");
+        }
+    }
+
+    private List<Announcement> verifyAnnouncements(List<String> announcementIDs) throws RemoteException {
         List<Announcement> announcements = new ArrayList<>();
 
         for(String id : announcementIDs) {
             Announcement announcement = announcementExists(id);
 
             if(announcement == null) {
-                throw new IllegalArgumentException("Announcement " + id + " does not exist");
+                throw new RemoteException("Announcement " + id + " does not exist");
             }
             else {
                 announcements.add(announcement);

@@ -8,6 +8,7 @@ package secforum;
 import security.HashingMD5;
 
 import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,15 +28,15 @@ public class Announcement implements Serializable {
      * @param message The message to be posted
      * @param quotedAnnouncements List of announcements that were referred to
      * @param signature Signature of the author
-     * @throws IllegalArgumentException if a message is longer than 255 characters ot if any of the arguments are null
+     * @throws RemoteException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, Integer nonce, byte[] signature, int counter) throws IllegalArgumentException {
+    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, LocalDateTime timestamp, Integer nonce, byte[] signature, int counter) throws RemoteException {
         if (message == null || pubKey == null || quotedAnnouncements == null) {
-            throw new IllegalArgumentException("Arguments cannot be null");
+            throw new RemoteException("Arguments cannot be null");
         }
 
         if (message.length() > 255) {
-            throw new IllegalArgumentException("Message cannot have more than 255 characters");
+            throw new RemoteException("Message cannot have more than 255 characters");
         }
 
         _id = HashingMD5.getDigest(pubKey.toString() + counter);

@@ -38,7 +38,7 @@ public class HashingMD5Tests {
 
         byte[] hash1 = HashingMD5.getDigest(bytes);
 
-        assertEquals(Objects.requireNonNull(hash1).length, 16); //MD5 => Digest of 16 bytes
+        assertEquals(Objects.requireNonNull(hash1).length, 32); //SHA-256 => Digest of 32 bytes
     }
 
 

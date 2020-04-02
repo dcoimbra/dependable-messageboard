@@ -61,7 +61,8 @@ public class Client {
                 switch (command) {
                     case 1: // register
                         res = _forum.register(_publicKey);
-                        verifyResponse(res, 0);
+
+                        res.verify(_serverKey, 0);
                         break;
 
                     case 2: // post
@@ -84,7 +85,9 @@ public class Client {
                         privateKey = Utils.loadPrivateKey(_id, password);
                         password = null;
 
-                        nonce = verifyNonce(_forum.getNonce(_publicKey));
+                        res = _forum.getNonce(_publicKey);
+                        nonce = res.verifyNonce(_publicKey);
+
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(message);
@@ -97,8 +100,7 @@ public class Client {
 
                         res = _forum.post(_publicKey, message, quotedAnnouncements, timestamp, signature);
 
-                        verifyResponse(res, nonce + 1);
-
+                        res.verify(_serverKey,nonce + 1);
                         break;
 
                     case 3: // read
@@ -114,7 +116,9 @@ public class Client {
 
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
-                        nonce = verifyNonce(_forum.getNonce(_publicKey));
+                        res = _forum.getNonce(_publicKey);
+                        nonce = res.verifyNonce(_publicKey);
+
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(publicKey);
@@ -126,8 +130,7 @@ public class Client {
 
                         res = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
 
-                        verifyAnnouncements(res, nonce + 1);
-
+                        res.verify(_serverKey,nonce + 1);
                         break;
 
                     case 4: // postGeneral
@@ -150,7 +153,9 @@ public class Client {
                         privateKey = Utils.loadPrivateKey(_id, password);
                         password = null;
 
-                        nonce = verifyNonce(_forum.getNonce(_publicKey));
+                        res = _forum.getNonce(_publicKey);
+                        nonce = res.verifyNonce(_publicKey);
+
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(message);
@@ -163,8 +168,7 @@ public class Client {
 
                         res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, timestamp, signature);
 
-                        verifyResponse(res, nonce + 1);
-
+                        res.verify(_serverKey,nonce + 1);
                         break;
 
                     case 5: // readGeneral
@@ -175,7 +179,9 @@ public class Client {
                         privateKey = Utils.loadPrivateKey(_id, password);
                         password = null;
 
-                        nonce = verifyNonce(_forum.getNonce(_publicKey));
+                        res = _forum.getNonce(_publicKey);
+                        nonce = res.verifyNonce(_publicKey);
+
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
                         toSerialize.add(nAnnouncement);
@@ -185,7 +191,8 @@ public class Client {
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
                         res = _forum.readGeneral(_publicKey, nAnnouncement, signature);
-                        verifyAnnouncements(res, nonce + 1);
+
+                        res.verify(_serverKey,nonce + 1);
                         break;
 
                     case 6: // exit
@@ -200,7 +207,7 @@ public class Client {
                 System.out.println("ERROR. Must be integer.");
             } catch (RemoteException e) {
                 System.out.println(e.detail.toString());
-            } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
+            } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException | UnrecoverableKeyException | IllegalArgumentException e) {
                 e.printStackTrace();
             }
         }
@@ -216,66 +223,47 @@ public class Client {
         return input;
     }
 
-    private Integer verifyNonce(NonceResponse res) {
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(res.getNonce());
-        try {
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-
-            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
-               return res.getNonce();
-            }
-            else {
-                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        throw new IllegalArgumentException("Nonce not returned");
-    }
-
-    private void verifyResponse(Response res, Integer nonce) {
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(res.getResponse());
-        toSerialize.add(nonce);
-
-        try {
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-
-            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
-                System.out.println(res.getResponse());
-            }
-            else {
-                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void verifyAnnouncements(Response res, Integer nonce) {
-        List<Object> toSerialize = new ArrayList<>();
-        toSerialize.add(res.getAnnouncements());
-        toSerialize.add(nonce);
-
-        try {
-            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-
-            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
-
-                for(Announcement a : res.getAnnouncements()) {
-                    System.out.println(a);
-                }
-                System.out.println("Got " + res.getAnnouncements().size() + " announcements!\n");
-            }
-            else {
-                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    private void verifyResponse(Response res, Integer nonce) {
+//        List<Object> toSerialize = new ArrayList<>();
+//        toSerialize.add(res.getResponse());
+//        toSerialize.add(nonce);
+//
+//        try {
+//            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+//
+//            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
+//                System.out.println(res.getResponse());
+//            }
+//            else {
+//                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    private void verifyAnnouncements(Response res, Integer nonce) {
+//        List<Object> toSerialize = new ArrayList<>();
+//        toSerialize.add(res.getAnnouncements());
+//        toSerialize.add(nonce);
+//
+//        try {
+//            byte[] messageBytes = Utils.serializeMessage(toSerialize);
+//
+//            if(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _serverKey)) {
+//
+//                for(Announcement a : res.getAnnouncements()) {
+//                    System.out.println(a);
+//                }
+//                System.out.println("Got " + res.getAnnouncements().size() + " announcements!\n");
+//            }
+//            else {
+//                System.out.println("ERROR. SECURITY VIOLATION WAS DETECTED!!");
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     public static void main(String[] args) {
         Client c = new Client(args[0]);

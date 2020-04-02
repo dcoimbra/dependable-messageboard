@@ -33,28 +33,26 @@ public class Utils {
         return certificate.getPublicKey();
     }
 
-    public static byte[] serialize(Object obj) {
+    public static byte[] serialize(Object obj) throws IOException {
         try (ByteArrayOutputStream b = new ByteArrayOutputStream()){
             try (ObjectOutputStream o = new ObjectOutputStream(b)){
                 o.writeObject(obj);
             }
             return b.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return null;
     }
 
-    public static byte[] serializeMessage(List<Object> parameters) throws IOException {
+    public static byte[] serializeMessage(List<Object> parameters) throws IllegalArgumentException {
         ByteArrayOutputStream messageBytes = new ByteArrayOutputStream();
 
         for (Object parameter : parameters) {
 
-            byte[] serializedParameter = serialize(parameter);
-            if (serializedParameter != null)
+            try {
+                byte[] serializedParameter = serialize(parameter);
                 messageBytes.write(serializedParameter);
-            else
-                throw new IllegalArgumentException();
+            } catch(IOException ioe) {
+                throw new IllegalArgumentException(parameter.getClass().toString() + " is not serializable");
+            }
         }
 
         return messageBytes.toByteArray();

@@ -1,6 +1,8 @@
 package secforum;
 
 import java.io.Serializable;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,16 +15,16 @@ public class Board implements Serializable {
         _announcements = new ArrayList<>();
     }
 
-    public void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, Integer nonce, byte[] signature, int counter) throws IllegalArgumentException {
+    public void post(PublicKey pubKey, String message, List<Announcement> a, LocalDateTime timestamp, Integer nonce, byte[] signature, int counter) throws RemoteException {
 
         Announcement announcement = new Announcement(pubKey, message, a, timestamp, nonce, signature, counter);
         _announcements.add(0, announcement);
     }
 
-    public List<Announcement> read(int number) throws IllegalArgumentException {
+    public List<Announcement> read(int number) throws RemoteException {
 
         if (number > _announcements.size()) {
-            throw new IllegalArgumentException();
+            throw new RemoteException("Board does not have that many announcements");
         }
 
         if (number == 0) {

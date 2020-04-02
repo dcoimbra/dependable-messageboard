@@ -71,7 +71,7 @@ public class ForumServer {
             try {
                 ForumServer.readForum();
             } catch (FileNotFoundException e) {
-                _forum = new Forum();
+                _forum = new Forum(args[0]);
             }
             Registry rmiRegistry = LocateRegistry.createRegistry(registryPort);
             rmiRegistry.rebind("forum", ForumServer.getForum());

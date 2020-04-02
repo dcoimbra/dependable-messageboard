@@ -1,6 +1,7 @@
 package secforum;
 
 import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,12 +40,12 @@ public class Account implements Serializable {
         return _announcementsBoard.getAnnouncements();
     }
 
-    public void post(String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws IllegalArgumentException {
+    public void post(String message, List<Announcement> a, LocalDateTime timestamp, byte[] signature) throws RemoteException {
         _announcementsBoard.post(_pubKey, message, a, timestamp, _nonce, signature, _counter);
         _counter++;
     }
 
-    public List<Announcement> read(int number) throws IllegalArgumentException {
+    public List<Announcement> read(int number) throws RemoteException {
         return _announcementsBoard.read(number);
     }
 }
