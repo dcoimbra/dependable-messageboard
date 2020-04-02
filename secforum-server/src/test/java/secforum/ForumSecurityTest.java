@@ -21,6 +21,7 @@ public class ForumSecurityTest {
     private static PublicKey _pubKey2;
     private String _message;
     private List<String> _quotedAnnouncements;
+    private List<String> _wrongQuotedAnnouncements;
     private LocalDateTime _timestamp;
     private byte[] _signaturePost;
     private byte[] _signatureRead;
@@ -64,6 +65,8 @@ public class ForumSecurityTest {
 
             _message = "ola";
             _quotedAnnouncements = new ArrayList<>();
+            _wrongQuotedAnnouncements = new ArrayList<>();
+            _wrongQuotedAnnouncements.add("a");
             _timestamp = LocalDateTime.now();
 
         } catch (IOException e) {
@@ -82,11 +85,6 @@ public class ForumSecurityTest {
             System.out.println(iae.getMessage());
             fail();
         }
-
-//            List<Object> toSerialize = new ArrayList<>();
-//            toSerialize.add(res.getNonce());
-//            byte[] messageBytes = Utils.serializeMessage(toSerialize);
-//            assertTrue(SigningSHA256_RSA.verify(messageBytes, res.getSignature(), _forum.loadPublicKey()));
     }
 
     @Test
@@ -138,6 +136,8 @@ public class ForumSecurityTest {
             fail();
         }
     }
+
+
 
     @Test
     public void readReplayAttack() {
@@ -254,6 +254,116 @@ public class ForumSecurityTest {
         } catch (IllegalArgumentException e) {
             fail();
         }
+    }
+
+    @Test
+    public void postRejectAttackTest() {
+        List<Object> toSerializePost = new ArrayList<>();
+        toSerializePost.add(_pubKey1);
+        toSerializePost.add(_message);
+        toSerializePost.add(_wrongQuotedAnnouncements);
+        toSerializePost.add(_timestamp);
+        toSerializePost.add(_nonce);
+
+        List<Object> toSerializePost2 = new ArrayList<>();
+        toSerializePost2.add(_pubKey1);
+        toSerializePost2.add(_message);
+        toSerializePost2.add(_quotedAnnouncements);
+        toSerializePost2.add(_timestamp);
+        toSerializePost2.add(_nonce + 1);
+
+        byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+        Response res = _forum.post(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _signaturePost);
+
+        messageBytesPost = Utils.serializeMessage(toSerializePost2);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+        _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+
+        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
+    }
+
+    @Test
+    public void postGeneralRejectAttackTest() {
+        List<Object> toSerializePost = new ArrayList<>();
+        toSerializePost.add(_pubKey1);
+        toSerializePost.add(_message);
+        toSerializePost.add(_wrongQuotedAnnouncements);
+        toSerializePost.add(_timestamp);
+        toSerializePost.add(_nonce);
+
+        List<Object> toSerializePost2 = new ArrayList<>();
+        toSerializePost2.add(_pubKey1);
+        toSerializePost2.add(_message);
+        toSerializePost2.add(_quotedAnnouncements);
+        toSerializePost2.add(_timestamp);
+        toSerializePost2.add(_nonce + 1);
+
+        byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+        Response res = _forum.postGeneral(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _signaturePost);
+
+        messageBytesPost = Utils.serializeMessage(toSerializePost2);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+        _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
+
+        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
+    }
+
+    @Test
+    public void readRejectAttackTest() {
+        List<Object> toSerializeRead = new ArrayList<>();
+        toSerializeRead.add(_pubKey1);
+        toSerializeRead.add(_pubKey1);
+        toSerializeRead.add(3);
+        toSerializeRead.add(_nonce);
+
+        List<Object> toSerializeRead2 = new ArrayList<>();
+        toSerializeRead2.add(_pubKey1);
+        toSerializeRead2.add(_pubKey1);
+        toSerializeRead2.add(0);
+        toSerializeRead2.add(_nonce + 1);
+
+        byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
+        _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+        Response res = _forum.read(_pubKey1, _pubKey1, 3, _signatureRead);
+
+        messageBytesRead = Utils.serializeMessage(toSerializeRead2);
+        _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+        _forum.read(_pubKey1, _pubKey1, 0, _signatureRead);
+
+        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
+    }
+
+    @Test
+    public void readGeneralRejectAttackTest() {
+        List<Object> toSerializeRead = new ArrayList<>();
+        toSerializeRead.add(_pubKey1);
+        toSerializeRead.add(3);
+        toSerializeRead.add(_nonce);
+
+        List<Object> toSerializeRead2 = new ArrayList<>();
+        toSerializeRead2.add(_pubKey1);
+        toSerializeRead2.add(0);
+        toSerializeRead2.add(_nonce + 1);
+
+        byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
+        _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+        Response res = _forum.readGeneral(_pubKey1, 3, _signatureReadGeneral);
+
+        messageBytesRead = Utils.serializeMessage(toSerializeRead2);
+        _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+        _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
+
+        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
     }
 
     @AfterEach

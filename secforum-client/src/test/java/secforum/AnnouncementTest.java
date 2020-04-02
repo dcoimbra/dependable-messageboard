@@ -6,6 +6,7 @@ import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.IOException;
+import java.rmi.RemoteException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
@@ -74,38 +75,46 @@ public class AnnouncementTest {
     @Test
     public void validAnnouncement254() {
         String repeated = new String(new char[254]);
-        _announcement = new Announcement(_publicKey, repeated, _quotedAnnouncements, _timestamp, _nonce, _signature, _counter);
-        assertEquals(repeated, _announcement.getMessage());
+        try {
+            _announcement = new Announcement(_publicKey, repeated, _quotedAnnouncements, _timestamp, _nonce, _signature, _counter);
+            assertEquals(repeated, _announcement.getMessage());
+        } catch (RemoteException e) {
+            fail();
+        }
     }
 
     @Test
     public void validAnnouncement255() {
         String repeated = new String(new char[255]);
-        _announcement = new Announcement(_publicKey, repeated, _quotedAnnouncements, _timestamp, _nonce, _signature, _counter);
-        assertEquals(repeated, _announcement.getMessage());
+        try {
+            _announcement = new Announcement(_publicKey, repeated, _quotedAnnouncements, _timestamp, _nonce, _signature, _counter);
+            assertEquals(repeated, _announcement.getMessage());
+        } catch (RemoteException e) {
+            fail();
+        }
     }
 
     @Test
     public void invalidAnnouncement() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(RemoteException.class,
                 () -> new Announcement(_publicKey, new String(new char[256]), _quotedAnnouncements, _timestamp, _nonce, _signature, _counter));
     }
 
     @Test
     public void invalidAnnouncementNullPubKey() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(RemoteException.class,
                 () -> _announcement = new Announcement(null, _message, _quotedAnnouncements, _timestamp, _nonce, _signature, _counter));
     }
 
     @Test
     public void invalidAnnouncementNullMessage() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(RemoteException.class,
                 () -> new Announcement(_publicKey, null, _quotedAnnouncements, _timestamp, _nonce, _signature, _counter));
     }
 
     @Test
     public void invalidAnnouncementNullQuotedAnnouncements() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(RemoteException.class,
                 () -> new Announcement(_publicKey, _message, null, _timestamp, _nonce, _signature, _counter));
     }
 }

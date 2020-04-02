@@ -86,10 +86,8 @@ public class Client {
                         privateKey = Utils.loadPrivateKey(_id, password);
                         password = null;
 
-                        System.out.println("Verifying nonce");
                         res = _forum.getNonce(_publicKey);
-                        nonce = res.verifyNonce(_publicKey);
-                        System.out.println("Nonce: " + nonce);
+                        nonce = res.verifyNonce(_serverKey);
 
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
@@ -120,7 +118,7 @@ public class Client {
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
                         res = _forum.getNonce(_publicKey);
-                        nonce = res.verifyNonce(_publicKey);
+                        nonce = res.verifyNonce(_serverKey);
 
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
@@ -157,7 +155,7 @@ public class Client {
                         password = null;
 
                         res = _forum.getNonce(_publicKey);
-                        nonce = res.verifyNonce(_publicKey);
+                        nonce = res.verifyNonce(_serverKey);
 
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);
@@ -183,7 +181,7 @@ public class Client {
                         password = null;
 
                         res = _forum.getNonce(_publicKey);
-                        nonce = res.verifyNonce(_publicKey);
+                        nonce = res.verifyNonce(_serverKey);
 
                         toSerialize = new ArrayList<>();
                         toSerialize.add(_publicKey);

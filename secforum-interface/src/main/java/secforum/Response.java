@@ -24,7 +24,7 @@ public abstract class Response implements Serializable {
 
     public Response(Integer nonce, PrivateKey privKey) {
         _nonce = nonce;
-
+        System.out.println("when creating, nonce = " + _nonce);
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(_nonce);
 
@@ -60,7 +60,7 @@ public abstract class Response implements Serializable {
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException {
         List<Object> toSerialize = new ArrayList<>();
         toSerialize.add(_nonce);
-
+        System.out.println("when verifying, nonce = " + _nonce);
         try {
             byte[] messageBytes = Utils.serializeMessage(toSerialize);
 

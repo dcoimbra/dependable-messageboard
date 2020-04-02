@@ -50,6 +50,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
     public Response getNonce(PublicKey pubKey) {
         if(!verifyRegistered(pubKey)){
+            System.out.println("Client got nonce = " + _accounts.get(pubKey).getNonce());
             return new NonceResponse(_privKey, _accounts.get(pubKey).getNonce());
         }
 
