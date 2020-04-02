@@ -1,7 +1,6 @@
 package secforum;
 
 import java.io.Serializable;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
