@@ -88,75 +88,28 @@ public class ForumTest {
             _nonce = 1;
             _counter = _nonce - 1;
 
-            List<Object> toSerializePost = new ArrayList<>();
-            toSerializePost.add(_pubKey1);
-            toSerializePost.add(_message);
-            toSerializePost.add(_quotedAnnouncements);
-            toSerializePost.add(_timestamp);
-            toSerializePost.add(_forum.getAccounts().get(_pubKey1).getNonce());
-
-            messageBytes = Utils.serializeMessage(toSerializePost);
+            messageBytes = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _timestamp, _forum.getAccounts().get(_pubKey1).getNonce());
             _signaturePost = SigningSHA256_RSA.sign(messageBytes, _privKey1);
 
-            List<Object> toSerializeRead = new ArrayList<>();
-            toSerializeRead.add(_pubKey2);
-            toSerializeRead.add(_pubKey1);
-            toSerializeRead.add(_read);
-            toSerializeRead.add(_nonce);
-
-            messageBytes = Utils.serializeMessage(toSerializeRead);
+            messageBytes = Utils.serializeMessage(_pubKey2, _pubKey1, _read, _nonce);
             _signatureRead = SigningSHA256_RSA.sign(messageBytes, _privKey2);
 
-            List<Object> toSerializeReadGeneral = new ArrayList<>();
-            toSerializeReadGeneral.add(_pubKey2);
-            toSerializeReadGeneral.add(_read);
-            toSerializeReadGeneral.add(_nonce);
-
-            byte[] messageBytesReadGeneral = Utils.serializeMessage(toSerializeReadGeneral);
+            byte[] messageBytesReadGeneral = Utils.serializeMessage(_pubKey2, _read, _nonce);
             _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey2);
 
-            List<Object> toSerializeInvalidPost = new ArrayList<>();
-            toSerializeInvalidPost.add(_pubKey1);
-            toSerializeInvalidPost.add(_message);
-            toSerializeInvalidPost.add(_wrongQuotedAnnouncements);
-            toSerializeInvalidPost.add(_timestamp);
-            toSerializeInvalidPost.add(_forum.getAccounts().get(_pubKey1).getNonce());
-
-            messageBytes = Utils.serializeMessage(toSerializeInvalidPost);
+            messageBytes = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _forum.getAccounts().get(_pubKey1).getNonce());
             _signaturePostInvalid = SigningSHA256_RSA.sign(messageBytes, _privKey1);
 
-            List<Object> toSerializeHighRead = new ArrayList<>();
-            toSerializeHighRead.add(_pubKey2);
-            toSerializeHighRead.add(_pubKey1);
-            toSerializeHighRead.add(_high);
-            toSerializeHighRead.add(_nonce);
-
-            messageBytes = Utils.serializeMessage(toSerializeHighRead);
+            messageBytes = Utils.serializeMessage(_pubKey2, _pubKey1, _high, _nonce);
             _signatureReadTooHigh = SigningSHA256_RSA.sign(messageBytes, _privKey2);
 
-            List<Object> toSerializeHighReadGeneral = new ArrayList<>();
-            toSerializeHighReadGeneral.add(_pubKey2);
-            toSerializeHighReadGeneral.add(_high);
-            toSerializeHighReadGeneral.add(_nonce);
-
-            messageBytes = Utils.serializeMessage(toSerializeHighReadGeneral);
+            messageBytes = Utils.serializeMessage(_pubKey2, _high, _nonce);
             _signatureReadGeneralTooHigh = SigningSHA256_RSA.sign(messageBytes, _privKey2);
 
-            List<Object> toSerializeNegativeRead = new ArrayList<>();
-            toSerializeNegativeRead.add(_pubKey2);
-            toSerializeNegativeRead.add(_pubKey1);
-            toSerializeNegativeRead.add(_negative);
-            toSerializeNegativeRead.add(_nonce);
-
-            messageBytes = Utils.serializeMessage(toSerializeNegativeRead);
+            messageBytes = Utils.serializeMessage(_pubKey2, _pubKey1, _negative, _nonce);
             _signatureReadNegative = SigningSHA256_RSA.sign(messageBytes, _privKey2);
 
-            List<Object> toSerializeNegativeReadGeneral = new ArrayList<>();
-            toSerializeNegativeReadGeneral.add(_pubKey2);
-            toSerializeNegativeReadGeneral.add(_negative);
-            toSerializeNegativeReadGeneral.add(_nonce);
-
-            messageBytes = Utils.serializeMessage(toSerializeNegativeReadGeneral);
+            messageBytes = Utils.serializeMessage(_pubKey2, _negative, _nonce);
             _signatureReadGeneralNegative = SigningSHA256_RSA.sign(messageBytes, _privKey2);
         } catch (IOException e) {
             fail();

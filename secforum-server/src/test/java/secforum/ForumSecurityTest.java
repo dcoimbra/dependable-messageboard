@@ -95,15 +95,8 @@ public class ForumSecurityTest {
 
     @Test
     public void postReplayAttackTest() {
-        List<Object> toSerializePost = new ArrayList<>();
-        toSerializePost.add(_pubKey1);
-        toSerializePost.add(_message);
-        toSerializePost.add(_quotedAnnouncements);
-        toSerializePost.add(_timestamp);
-        toSerializePost.add(_nonce);
-
         try {
-            byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _timestamp, _nonce);
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
             _forum.post(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost);
@@ -117,15 +110,8 @@ public class ForumSecurityTest {
 
     @Test
     public void postGeneralReplayAttackTest() {
-        List<Object> toSerializePost = new ArrayList<>();
-        toSerializePost.add(_pubKey1);
-        toSerializePost.add(_message);
-        toSerializePost.add(_quotedAnnouncements);
-        toSerializePost.add(_timestamp);
-        toSerializePost.add(_nonce);
-
         try {
-            byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _timestamp, _nonce);
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
             _forum.postGeneral(_pubKey1, _message, new ArrayList<>(), _timestamp, _signaturePost);
@@ -141,14 +127,8 @@ public class ForumSecurityTest {
 
     @Test
     public void readReplayAttack() {
-        List<Object> toSerializeRead = new ArrayList<>();
-        toSerializeRead.add(_pubKey1);
-        toSerializeRead.add(_pubKey1);
-        toSerializeRead.add(0);
-        toSerializeRead.add(_nonce);
-
         try {
-            byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
+            byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce);
             _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 
             _forum.read(_pubKey1, _pubKey1, 0, _signatureRead);
@@ -162,13 +142,8 @@ public class ForumSecurityTest {
 
     @Test
     public void readGeneralReplayAttack() {
-        List<Object> toSerializeReadGeneral = new ArrayList<>();
-        toSerializeReadGeneral.add(_pubKey1);
-        toSerializeReadGeneral.add(0);
-        toSerializeReadGeneral.add(_nonce);
-
         try {
-            byte[] messageBytesReadGeneral = Utils.serializeMessage(toSerializeReadGeneral);
+            byte[] messageBytesReadGeneral = Utils.serializeMessage(_pubKey1, 0, _nonce);
             _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey1);
             _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
             Response res = _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
@@ -181,15 +156,8 @@ public class ForumSecurityTest {
 
     @Test
     public void postIntegrityTest() {
-        List<Object> toSerializePost = new ArrayList<>();
-        toSerializePost.add(_pubKey1);
-        toSerializePost.add(_message);
-        toSerializePost.add(_quotedAnnouncements);
-        toSerializePost.add(_timestamp);
-        toSerializePost.add(_nonce);
-
         try {
-            byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _timestamp, _nonce);
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
             Response res = _forum.post(_pubKey1, "attack", new ArrayList<>(), _timestamp, _signaturePost);
 
@@ -201,15 +169,8 @@ public class ForumSecurityTest {
 
     @Test
     public void postGeneralIntegrityTest() {
-        List<Object> toSerializePost = new ArrayList<>();
-        toSerializePost.add(_pubKey1);
-        toSerializePost.add(_message);
-        toSerializePost.add(_quotedAnnouncements);
-        toSerializePost.add(_timestamp);
-        toSerializePost.add(_nonce);
-
         try {
-            byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _timestamp, _nonce);
             _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
             Response res = _forum.postGeneral(_pubKey1, "attack", new ArrayList<>(), _timestamp, _signaturePost);
 
@@ -221,14 +182,8 @@ public class ForumSecurityTest {
 
     @Test
     public void readIntegrityTest() {
-        List<Object> toSerializeRead = new ArrayList<>();
-        toSerializeRead.add(_pubKey1);
-        toSerializeRead.add(_pubKey1);
-        toSerializeRead.add(0);
-        toSerializeRead.add(_nonce);
-
         try {
-            byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
+            byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce);
             _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
             Response res = _forum.read(_pubKey1, _pubKey1, 404, _signatureRead);
 
@@ -240,13 +195,8 @@ public class ForumSecurityTest {
 
     @Test
     public void readGeneralIntegrityTest() {
-        List<Object> toSerializeReadGeneral = new ArrayList<>();
-        toSerializeReadGeneral.add(_pubKey1);
-        toSerializeReadGeneral.add(0);
-        toSerializeReadGeneral.add(_nonce);
-
         try {
-            byte[] messageBytesReadGeneral = Utils.serializeMessage(toSerializeReadGeneral);
+            byte[] messageBytesReadGeneral = Utils.serializeMessage(_pubKey1, 0, _nonce);
             _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey1);
             Response res = _forum.readGeneral(_pubKey1, 404, _signatureReadGeneral);
 
@@ -258,26 +208,12 @@ public class ForumSecurityTest {
 
     @Test
     public void postRejectAttackTest() {
-        List<Object> toSerializePost = new ArrayList<>();
-        toSerializePost.add(_pubKey1);
-        toSerializePost.add(_message);
-        toSerializePost.add(_wrongQuotedAnnouncements);
-        toSerializePost.add(_timestamp);
-        toSerializePost.add(_nonce);
-
-        List<Object> toSerializePost2 = new ArrayList<>();
-        toSerializePost2.add(_pubKey1);
-        toSerializePost2.add(_message);
-        toSerializePost2.add(_quotedAnnouncements);
-        toSerializePost2.add(_timestamp);
-        toSerializePost2.add(_nonce + 1);
-
-        byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+        byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _nonce);
         _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
         Response res = _forum.post(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _signaturePost);
 
-        messageBytesPost = Utils.serializeMessage(toSerializePost2);
+        messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _timestamp, _nonce + 1);
         _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
         _forum.post(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
@@ -287,26 +223,12 @@ public class ForumSecurityTest {
 
     @Test
     public void postGeneralRejectAttackTest() {
-        List<Object> toSerializePost = new ArrayList<>();
-        toSerializePost.add(_pubKey1);
-        toSerializePost.add(_message);
-        toSerializePost.add(_wrongQuotedAnnouncements);
-        toSerializePost.add(_timestamp);
-        toSerializePost.add(_nonce);
-
-        List<Object> toSerializePost2 = new ArrayList<>();
-        toSerializePost2.add(_pubKey1);
-        toSerializePost2.add(_message);
-        toSerializePost2.add(_quotedAnnouncements);
-        toSerializePost2.add(_timestamp);
-        toSerializePost2.add(_nonce + 1);
-
-        byte[] messageBytesPost = Utils.serializeMessage(toSerializePost);
+        byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _nonce);
         _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
         Response res = _forum.postGeneral(_pubKey1, _message, _wrongQuotedAnnouncements, _timestamp, _signaturePost);
 
-        messageBytesPost = Utils.serializeMessage(toSerializePost2);
+        messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _timestamp, _nonce + 1);
         _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
 
         _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _timestamp, _signaturePost);
@@ -316,24 +238,12 @@ public class ForumSecurityTest {
 
     @Test
     public void readRejectAttackTest() {
-        List<Object> toSerializeRead = new ArrayList<>();
-        toSerializeRead.add(_pubKey1);
-        toSerializeRead.add(_pubKey1);
-        toSerializeRead.add(3);
-        toSerializeRead.add(_nonce);
-
-        List<Object> toSerializeRead2 = new ArrayList<>();
-        toSerializeRead2.add(_pubKey1);
-        toSerializeRead2.add(_pubKey1);
-        toSerializeRead2.add(0);
-        toSerializeRead2.add(_nonce + 1);
-
-        byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
+        byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 3, _nonce);
         _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 
         Response res = _forum.read(_pubKey1, _pubKey1, 3, _signatureRead);
 
-        messageBytesRead = Utils.serializeMessage(toSerializeRead2);
+        messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce + 1);
         _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 
         _forum.read(_pubKey1, _pubKey1, 0, _signatureRead);
@@ -343,22 +253,12 @@ public class ForumSecurityTest {
 
     @Test
     public void readGeneralRejectAttackTest() {
-        List<Object> toSerializeRead = new ArrayList<>();
-        toSerializeRead.add(_pubKey1);
-        toSerializeRead.add(3);
-        toSerializeRead.add(_nonce);
-
-        List<Object> toSerializeRead2 = new ArrayList<>();
-        toSerializeRead2.add(_pubKey1);
-        toSerializeRead2.add(0);
-        toSerializeRead2.add(_nonce + 1);
-
-        byte[] messageBytesRead = Utils.serializeMessage(toSerializeRead);
+        byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, 3, _nonce);
         _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 
         Response res = _forum.readGeneral(_pubKey1, 3, _signatureReadGeneral);
 
-        messageBytesRead = Utils.serializeMessage(toSerializeRead2);
+        messageBytesRead = Utils.serializeMessage(_pubKey1, 0, _nonce + 1);
         _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 
         _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
