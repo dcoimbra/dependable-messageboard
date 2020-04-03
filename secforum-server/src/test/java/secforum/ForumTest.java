@@ -124,7 +124,7 @@ public class ForumTest {
     @Test
     public void registerAlreadyRegistered() {
         Response res = _forum.register(_pubKey1);
-        assertEquals("This public key is already registered.", res.getException().getMessage());
+        assertEquals("Your public key is already registered.", res.getException().getMessage());
     }
 
     @Test
@@ -138,7 +138,7 @@ public class ForumTest {
     @Test
     public void invalidPostNotRegistered() {
         Response res = _forum.post(_pubKey2, _message, _quotedAnnouncements, _signaturePost);
-        assertEquals("This public key is not registered.", res.getException().getMessage());
+        assertEquals("Your public key is not registered.", res.getException().getMessage());
     }
 
     @Test
@@ -158,7 +158,7 @@ public class ForumTest {
     @Test
     public void invalidPostGeneralNotRegistered() {
         Response res = _forum.postGeneral(_pubKey2, _message, _quotedAnnouncements, _signaturePost);
-        assertEquals("This public key is not registered.", res.getException().getMessage());
+        assertEquals("Your public key is not registered.", res.getException().getMessage());
     }
 
     @Test

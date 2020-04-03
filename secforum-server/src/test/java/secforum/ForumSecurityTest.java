@@ -85,7 +85,7 @@ public class ForumSecurityTest {
     @Test
     public void getNonceNotRegistered() {
          Response res = _forum.getNonce(_pubKey2);
-         assertEquals("This public key is not registered.", res.getException().getMessage());
+         assertEquals("Your public key is not registered.", res.getException().getMessage());
     }
 
     @Test
