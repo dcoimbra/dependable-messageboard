@@ -5,7 +5,7 @@ Client 3: client3
 Server: server
 
 How to run:
-First, install the interface module and run all tests:
+First, while on the root directory, install the interface module and run all tests:
 
 mvn clean install
 
