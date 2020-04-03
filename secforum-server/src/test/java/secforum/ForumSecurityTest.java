@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.*;
 import java.util.ArrayList;
@@ -24,7 +25,6 @@ public class ForumSecurityTest {
     private byte[] _signaturePost;
     private byte[] _signatureRead;
     private static PrivateKey _privKey1;
-    private static PrivateKey _privKey2;
     private byte[] _signatureReadGeneral;
     private static Integer _nonce;
 
@@ -48,7 +48,6 @@ public class ForumSecurityTest {
 
             KeyPair pair2 = generator.generateKeyPair();
             _pubKey2 = pair2.getPublic();
-            _privKey2 = pair2.getPrivate();
         } catch (NoSuchAlgorithmException e) {
             fail();
         }
@@ -268,5 +267,10 @@ public class ForumSecurityTest {
         _message = null;
         _quotedAnnouncements = null;
         _signaturePost = null;
+
+        File forum = new File("src/main/resources/forum.ser");
+        File backup = new File("src/main/resources/forum_backup.ser");
+        forum.delete();
+        backup.delete();
     }
 }

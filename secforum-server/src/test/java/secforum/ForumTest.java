@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.security.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -258,7 +257,6 @@ public class ForumTest {
 
         File forum = new File("src/main/resources/forum.ser");
         File backup = new File("src/main/resources/forum_backup.ser");
-
         forum.delete();
         backup.delete();
     }

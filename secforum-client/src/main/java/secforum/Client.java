@@ -76,7 +76,6 @@ public class Client {
                         System.out.println("Enter your private key password:");
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
-                        password = null;
 
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);
@@ -98,7 +97,6 @@ public class Client {
                         System.out.println("Enter your private key password:");
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
-                        password = null;
 
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
@@ -129,7 +127,6 @@ public class Client {
                         System.out.println("Enter your private key password:");
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
-                        password = null;
 
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);
@@ -147,7 +144,6 @@ public class Client {
                         System.out.println("Enter your private key password:");
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
-                        password = null;
 
                         res = _forum.getNonce(_publicKey);
                         nonce = res.verifyNonce(_serverKey);

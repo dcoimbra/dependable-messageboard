@@ -3,7 +3,6 @@ package secforum;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.security.PublicKey;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class Account implements Serializable {
@@ -18,10 +17,6 @@ public class Account implements Serializable {
         _announcementsBoard = new Board();
         _counter = 0;
         _nonce = 0;
-    }
-
-    public PublicKey getPubKey() {
-        return _pubKey;
     }
 
     public int getCounter() {

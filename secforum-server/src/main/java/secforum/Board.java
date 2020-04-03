@@ -38,10 +38,6 @@ public class Board implements Serializable {
         return result;
     }
 
-    public int nAnnouncements() {
-        return _announcements.size();
-    }
-
     public List<Announcement> getAnnouncements() {
         return new ArrayList<>(_announcements);
     }

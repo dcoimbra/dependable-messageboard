@@ -12,10 +12,6 @@ import java.util.List;
 public abstract class Response implements Serializable {
     protected byte[] _signature;
 
-    public byte[] getSignature() {
-        return _signature;
-    }
-
     public String getResponse() { return null; }
 
     public List<Announcement> getAnnouncements() {

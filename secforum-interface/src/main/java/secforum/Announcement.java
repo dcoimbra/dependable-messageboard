@@ -60,10 +60,6 @@ public class Announcement implements Serializable {
         return _pubKey;
     }
 
-    public byte[] getSignature() {
-        return _signature;
-    }
-
     public int nQuotedAnnouncements() {
         return _quotedAnnouncements.size();
     }
