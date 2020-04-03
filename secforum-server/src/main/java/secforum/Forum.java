@@ -43,7 +43,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             System.exit(0);
         }
 
-        _notClient = new ExceptionResponse(new RemoteException("This public key is not registered."), _privKey, 0);
+        _notClient = new ExceptionResponse(new RemoteException("Your public key is not registered."), _privKey, 0);
     }
 
 
@@ -65,7 +65,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         Response res;
 
         if(_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-            res = new ExceptionResponse(new RemoteException("This public key is already registered."), _privKey, 0);
+            res = new ExceptionResponse(new RemoteException("Your public key is already registered."), _privKey, 0);
         } else {
             String text = "Registered successfully.";
             System.out.println("Someone was registered successfully.");
