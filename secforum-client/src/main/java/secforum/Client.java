@@ -17,7 +17,7 @@ public class Client {
     private String _id;
     private PublicKey _publicKey;
     private PublicKey _serverKey;
-    private ForumInterface _forum;
+    private List<ForumInterface> _forums = new ArrayList<>();
     private Scanner _keyboardSc;
 
     public Client(String id) {
@@ -26,8 +26,13 @@ public class Client {
             _publicKey = Utils.loadPublicKey(id);
             _serverKey = Utils.loadPublicKeyFromCerificate("src/main/resources/server.cer");
 
-            _forum = (ForumInterface) Naming.lookup("//localhost:1099/forum");
-            System.out.println("Found server");
+            String name;
+            for (int i = 0; i <= 3; i++) {
+                name = "//localhost:" + (1099 + i) + "/forum" + i;
+                _forums.add((ForumInterface) Naming.lookup(name));
+                System.out.println("Found server: " + name);
+            }
+
         } catch (NotBoundException | NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException e) {
             System.out.println(e.getMessage());
         }
@@ -51,13 +56,14 @@ public class Client {
                 byte[] signature;
                 byte[] messageBytes;
                 String password;
-                Integer nonce;
+                Integer nonce = 0;
 
                 switch (command) {
                     case 1: // register
-                        res = _forum.register(_publicKey);
-
-                        res.verify(_serverKey, 0);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.register(_publicKey);
+                            res.verify(_serverKey, 0);
+                        }
                         break;
 
                     case 2: // post
@@ -77,15 +83,19 @@ public class Client {
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
 
-                        res = _forum.getNonce(_publicKey);
-                        nonce = res.verifyNonce(_serverKey);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.getNonce(_publicKey);
+                            nonce = res.verifyNonce(_serverKey);
+                        }
 
                         messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
-                        res = _forum.post(_publicKey, message, quotedAnnouncements, signature);
-                        System.out.println("Verifying post");
-                        res.verify(_serverKey,nonce + 1);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.post(_publicKey, message, quotedAnnouncements, signature);
+                            System.out.println("Verifying post");
+                            res.verify(_serverKey, nonce + 1);
+                        }
                         break;
 
                     case 3: // read
@@ -100,15 +110,18 @@ public class Client {
 
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
-                        res = _forum.getNonce(_publicKey);
-                        nonce = res.verifyNonce(_serverKey);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.getNonce(_publicKey);
+                            nonce = res.verifyNonce(_serverKey);
+                        }
 
                         messageBytes = Utils.serializeMessage(_publicKey, publicKey, nAnnouncement, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
-                        res = _forum.read(_publicKey, publicKey, nAnnouncement, signature);
-
-                        res.verify(_serverKey,nonce + 1);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.read(_publicKey, publicKey, nAnnouncement, signature);
+                            res.verify(_serverKey, nonce + 1);
+                        }
                         break;
 
                     case 4: // postGeneral
@@ -128,14 +141,18 @@ public class Client {
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
 
-                        res = _forum.getNonce(_publicKey);
-                        nonce = res.verifyNonce(_serverKey);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.getNonce(_publicKey);
+                            nonce = res.verifyNonce(_serverKey);
+                        }
 
                         messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
-                        res = _forum.postGeneral(_publicKey, message, quotedAnnouncements, signature);
-                        res.verify(_serverKey,nonce + 1);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.postGeneral(_publicKey, message, quotedAnnouncements, signature);
+                            res.verify(_serverKey, nonce + 1);
+                        }
                         break;
 
                     case 5: // readGeneral
@@ -145,15 +162,18 @@ public class Client {
                         password = _keyboardSc.nextLine();
                         privateKey = Utils.loadPrivateKey(_id, password);
 
-                        res = _forum.getNonce(_publicKey);
-                        nonce = res.verifyNonce(_serverKey);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.getNonce(_publicKey);
+                            nonce = res.verifyNonce(_serverKey);
+                        }
 
                         messageBytes = Utils.serializeMessage(_publicKey, nAnnouncement, nonce);
                         signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
 
-                        res = _forum.readGeneral(_publicKey, nAnnouncement, signature);
-
-                        res.verify(_serverKey,nonce + 1);
+                        for (ForumInterface forum : _forums) {
+                            res = forum.readGeneral(_publicKey, nAnnouncement, signature);
+                            res.verify(_serverKey, nonce + 1);
+                        }
                         break;
 
                     case 6: // exit

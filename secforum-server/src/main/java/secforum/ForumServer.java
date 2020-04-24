@@ -63,9 +63,13 @@ public class ForumServer {
     }
 
     public static void main(String[] args) {
-
+        String password = args[0];
+        int id = Integer.parseInt(args[1]);
         int registryPort = 1099;
         System.out.println("Main OK");
+
+        System.out.println("Id: " + id);
+        System.out.println("Port: " + (registryPort + id));
 
         try {
             try {
@@ -73,8 +77,8 @@ public class ForumServer {
             } catch (FileNotFoundException e) {
                 _forum = new Forum(args[0]);
             }
-            Registry rmiRegistry = LocateRegistry.createRegistry(registryPort);
-            rmiRegistry.rebind("forum", ForumServer.getForum());
+            Registry rmiRegistry = LocateRegistry.createRegistry(registryPort + id);
+            rmiRegistry.rebind("forum" + id, ForumServer.getForum());
 
             System.out.println("Forum server ready");
 
