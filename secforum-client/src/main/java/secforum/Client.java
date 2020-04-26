@@ -142,7 +142,7 @@ public class Client {
                             resList.add(res);
                         }
 
-                        verifyRead(resList, readlist, nonce);
+                        verifyRead(resList, publicKey, readlist, nonce);
                         printAnnouncements(readlist);
 
                         break;
@@ -212,7 +212,7 @@ public class Client {
                             resList.add(res);
                         }
 
-                        verifyRead(resList, readlist, nonce);
+                        verifyRead(resList, _publicKey, readlist, nonce);
                         printAnnouncements(readlist);
 
                         break;
@@ -235,10 +235,10 @@ public class Client {
         }
     }
 
-    private void verifyRead(List<Response> resList, List<Response> readlist, Integer nonce) {
+    private void verifyRead(List<Response> resList, PublicKey publicKey, List<Response> readlist, Integer nonce) {
         for (Response r : resList) {
             try {
-                if (r.verify(_serverKey, nonce + 1)) {
+                if (r.verify(_serverKey, publicKey, nonce + 1)) {
                     readlist.add(r);
                 }
             } catch (IllegalArgumentException e) {
@@ -247,7 +247,6 @@ public class Client {
             }
         }
     }
-
 
     private void printAnnouncements(List<Response> readlist) throws IllegalArgumentException {
         if (readlist.size() > (_N + _f) / 2) {

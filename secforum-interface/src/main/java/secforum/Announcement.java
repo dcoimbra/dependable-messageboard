@@ -6,6 +6,8 @@
 package secforum;
 
 import security.HashingSHA256;
+import security.SigningSHA256_RSA;
+import security.Utils;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -46,6 +48,12 @@ public class Announcement implements Serializable {
         _timestamp = LocalDateTime.now();
         _nonce = nonce;
         _signature = signature;
+    }
+
+    public boolean verify(PublicKey publicKey) {
+        byte[] messageBytes = Utils.serializeMessage(_pubKey, _message, _quotedAnnouncements, _nonce);
+
+        return (SigningSHA256_RSA.verify(messageBytes, _signature, publicKey));
     }
 
     public String getId() {

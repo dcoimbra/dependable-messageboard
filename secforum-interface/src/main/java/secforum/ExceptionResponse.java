@@ -37,5 +37,10 @@ public class ExceptionResponse extends Response {
     }
 
     @Override
+    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) throws IllegalArgumentException {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
 }

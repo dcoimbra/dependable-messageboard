@@ -21,11 +21,22 @@ public class ReadResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey pubKey, Integer nonce) {
+    public boolean verify(PublicKey serverKey, Integer nonce) throws IllegalArgumentException {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) {
         try {
             byte[] messageBytes = Utils.serializeMessage(_announcements, nonce);
 
-            if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
+            if (SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
+                for (Announcement announcement : _announcements) {
+                    if (!announcement.verify(publicKey)) {
+                        throw new IllegalArgumentException("ERROR. Signature mismatch: server is byzantine.");
+                    }
+                }
+
                 return true;
             } else {
                 throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");

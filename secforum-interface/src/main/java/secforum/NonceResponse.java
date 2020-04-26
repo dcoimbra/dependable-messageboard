@@ -15,7 +15,14 @@ public class NonceResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey pubKey, Integer nonce) {return true;}
+    public boolean verify(PublicKey pubKey, Integer nonce) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) throws IllegalArgumentException {
+        throw new IllegalArgumentException();
+    }
 
     @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException {
