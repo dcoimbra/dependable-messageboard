@@ -32,7 +32,7 @@ public abstract class Response implements Serializable {
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
-    public abstract void verify(PublicKey pubKey, Integer nonce) throws IllegalArgumentException;
+    public abstract boolean verify(PublicKey pubKey, Integer nonce) throws IllegalArgumentException;
 
     public abstract Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException;
 }

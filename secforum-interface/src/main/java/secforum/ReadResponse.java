@@ -21,15 +21,12 @@ public class ReadResponse extends Response {
     }
 
     @Override
-    public void verify(PublicKey pubKey, Integer nonce) {
+    public boolean verify(PublicKey pubKey, Integer nonce) {
         try {
             byte[] messageBytes = Utils.serializeMessage(_announcements, nonce);
 
             if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
-                for(Announcement a : _announcements) {
-                    System.out.println(a);
-                }
-                System.out.println("Got " + _announcements.size() + " announcements!\n");
+                return true;
             } else {
                 throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
             }

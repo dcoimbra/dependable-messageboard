@@ -20,13 +20,14 @@ public class WriteResponse extends Response {
     }
 
     @Override
-    public void verify(PublicKey pubKey, Integer nonce) {
+    public boolean verify(PublicKey pubKey, Integer nonce) {
 
         try {
             byte[] messageBytes = Utils.serializeMessage(_response, nonce);
 
             if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
                 System.out.println(_response);
+                return true;
             } else {
                 throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
             }

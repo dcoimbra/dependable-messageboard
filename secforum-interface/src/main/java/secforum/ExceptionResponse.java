@@ -21,12 +21,13 @@ public class ExceptionResponse extends Response {
     }
 
     @Override
-    public void verify(PublicKey pubKey, Integer nonce) {
+    public boolean verify(PublicKey pubKey, Integer nonce) {
         try {
             byte[] messageBytes = Utils.serializeMessage(_exception, nonce);
 
             if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
                 System.out.println(_exception.getMessage());
+                return false;
             } else {
                 throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
             }
