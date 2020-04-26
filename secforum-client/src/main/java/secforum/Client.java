@@ -251,7 +251,7 @@ public class Client {
 
     private void printAnnouncements(List<Response> readlist) throws IllegalArgumentException {
         if (readlist.size() > (_N + _f) / 2) {
-            Response v = readlist.get(readlist.size() - 1);
+            Response v = highestRes(readlist);
 
             List<Announcement> announcements = v.getAnnouncements();
 
@@ -264,6 +264,22 @@ public class Client {
         else {
             throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
         }
+    }
+
+    private Response highestRes(List<Response> readlist) {
+        int highestNonce = 0;
+        Response highestResponse = null;
+        for (Response res : readlist) {
+            Announcement mostRecentAnnouncement = res.getAnnouncements().get(0);
+            Integer nonce = mostRecentAnnouncement.getNonce();
+
+            if (nonce >= highestNonce) {
+                highestNonce = nonce;
+                highestResponse = res;
+            }
+        }
+
+        return highestResponse;
     }
 
     private int requestInt(String prompt) throws NumberFormatException {

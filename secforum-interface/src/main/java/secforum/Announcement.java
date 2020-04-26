@@ -64,6 +64,10 @@ public class Announcement implements Serializable {
         return _quotedAnnouncements.size();
     }
 
+    public Integer getNonce() {
+        return _nonce;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
