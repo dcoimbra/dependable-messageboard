@@ -10,8 +10,8 @@ import java.util.List;
 public class ReadResponse extends Response {
     private List<Announcement> _announcements;
 
-    public ReadResponse(List<Announcement> announcements, PrivateKey privKey, Integer nonce) {
-        super(nonce, privKey, announcements);
+    public ReadResponse(List<Announcement> announcements, PrivateKey privKey, Integer nonce, int rid) {
+        super(nonce, privKey, announcements, rid);
         _announcements = announcements;
     }
 
@@ -27,23 +27,24 @@ public class ReadResponse extends Response {
 
     @Override
     public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) {
-        try {
-            byte[] messageBytes = Utils.serializeMessage(_announcements, nonce);
+        byte[] messageBytes = Utils.serializeMessage(_announcements, nonce);
 
-            if (SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
-                for (Announcement announcement : _announcements) {
-                    if (!announcement.verify(publicKey)) {
-                        throw new IllegalArgumentException("ERROR. Signature mismatch: server is byzantine.");
-                    }
+        if (SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
+            for (Announcement announcement : _announcements) {
+                if (!announcement.verify(publicKey)) {
+                    throw new IllegalArgumentException("ERROR. Signature mismatch: server is byzantine.");
                 }
-
-                return true;
-            } else {
-                throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
             }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Nonce was not returned");
+
+            return true;
+        } else {
+            throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
         }
+    }
+
+    @Override
+    public boolean verify(PublicKey publicKey, Integer nonce, int ts) throws IllegalArgumentException {
+        throw new IllegalArgumentException();
     }
 
     @Override

@@ -8,10 +8,12 @@ import java.security.PublicKey;
 
 public class WriteResponse extends Response {
     private String _response;
+    private int _ts;
 
-    public WriteResponse(String response, PrivateKey privKey, Integer nonce) {
-        super(nonce, privKey, response);
+    public WriteResponse(String response, PrivateKey privKey, Integer nonce, int ts) {
+        super(nonce, privKey, response, ts);
         _response = response;
+        _ts = ts;
     }
 
     @Override
@@ -20,21 +22,19 @@ public class WriteResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey pubKey, Integer nonce) {
+    public boolean verify(PublicKey pubKey, Integer nonce, int ts) {
+        byte[] messageBytes = Utils.serializeMessage(_response, nonce, ts);
 
-        try {
-            byte[] messageBytes = Utils.serializeMessage(_response, nonce);
-
-            if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
-                System.out.println(_response);
-                return true;
-            } else {
-                throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Nonce was not returned");
+        if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
+            System.out.println(_response);
+            return true;
+        } else {
+            throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
         }
     }
+
+    @Override
+    public boolean verify(PublicKey pubKey, Integer nonce) { throw new IllegalArgumentException(); }
 
     @Override
     public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) throws IllegalArgumentException {

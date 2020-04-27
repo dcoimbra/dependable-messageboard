@@ -27,6 +27,11 @@ public abstract class Response implements Serializable {
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
+    public Response(Integer nonce, PrivateKey privKey, Object response, int ts) {
+        byte[] messageBytes = Utils.serializeMessage(response, nonce, ts);
+        _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
+    }
+
     public Response(Integer nonce, PrivateKey privKey) {
         byte[] messageBytes = Utils.serializeMessage(nonce);
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
@@ -35,6 +40,8 @@ public abstract class Response implements Serializable {
     public abstract boolean verify(PublicKey serverKey, Integer nonce) throws IllegalArgumentException;
 
     public abstract boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) throws IllegalArgumentException;
+
+    public abstract boolean verify(PublicKey publicKey, Integer nonce, int ts) throws IllegalArgumentException;
 
     public abstract Integer verifyNonce(PublicKey serverKey) throws IllegalArgumentException;
 }

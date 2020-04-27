@@ -25,15 +25,16 @@ public class NonceResponse extends Response {
     }
 
     @Override
+    public boolean verify(PublicKey publicKey, Integer nonce, int ts) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException {
-        try {
-            byte[] messageBytes = Utils.serializeMessage(_nonce);
+        byte[] messageBytes = Utils.serializeMessage(_nonce);
 
-            if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) { return _nonce; }
+        if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) { return _nonce; }
 
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Nonce was not returned");
-        }
         throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
     }
 }

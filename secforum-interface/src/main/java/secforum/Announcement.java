@@ -22,6 +22,7 @@ public class Announcement implements Serializable {
     private List<Announcement> _quotedAnnouncements;
     private LocalDateTime _timestamp;
     private Integer _nonce;
+    private int _wts;
     private byte[] _signature;
 
     /**
@@ -32,7 +33,7 @@ public class Announcement implements Serializable {
      * @param signature Signature of the author
      * @throws RemoteException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, Integer nonce, byte[] signature, int counter) throws RemoteException {
+    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, Integer nonce, byte[] signature, int counter, int wts) throws RemoteException {
         if (message == null || pubKey == null || quotedAnnouncements == null) {
             throw new RemoteException("Arguments cannot be null");
         }
@@ -47,11 +48,12 @@ public class Announcement implements Serializable {
         _quotedAnnouncements = quotedAnnouncements;
         _timestamp = LocalDateTime.now();
         _nonce = nonce;
+        _wts = wts;
         _signature = signature;
     }
 
     public boolean verify(PublicKey publicKey) {
-        byte[] messageBytes = Utils.serializeMessage(_pubKey, _message, _quotedAnnouncements, _nonce);
+        byte[] messageBytes = Utils.serializeMessage(_pubKey, _message, _quotedAnnouncements, _nonce, _wts);
 
         return (SigningSHA256_RSA.verify(messageBytes, _signature, publicKey));
     }

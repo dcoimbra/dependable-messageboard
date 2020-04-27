@@ -21,6 +21,8 @@ public class Client {
     private Scanner _keyboardSc;
     private static final int _f = 1;
     private static final int _N = 3 * _f + 1;
+    private static ByzantineRegularRegister _regularRegister;
+    private static ByzantineRegularRegister _regularRegisterGeneral;
 
     public Client(String id) {
         try {
@@ -32,6 +34,7 @@ public class Client {
             System.out.println("Enter your private key password:");
             String password = _keyboardSc.nextLine();
             _privateKey = Utils.loadPrivateKey(id, password);
+            _regularRegister = new ByzantineRegularRegister();
 
             String name;
             for (int i = 0; i < _N; i++) {
@@ -68,7 +71,7 @@ public class Client {
                     case 1: // register
                         for (ForumInterface forum : _forums) {
                             res = forum.register(_publicKey);
-                            res.verify(_serverKey, 0);
+                            res.verify(_serverKey, 0, 0);
                         }
                         break;
 
@@ -85,25 +88,22 @@ public class Client {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        for (ForumInterface forum : _forums) {
+                        _regularRegister.setWts();
+                        int wts = _regularRegister.getWts();
+                        _regularRegister.clearAcklist();
+
+                        for(ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
                             nonce = res.verifyNonce(_serverKey);
-                        }
 
-                        messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce);
-                        signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
+                            messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce, wts);
+                            signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
 
-                        for (ForumInterface forum : _forums) {
-                            res = forum.post(_publicKey, message, quotedAnnouncements, signature);
-                            resList.add(res);
-                        }
+                            res = forum.post(_publicKey, message, quotedAnnouncements, wts, signature);
 
-                        System.out.println("Verifying post");
-
-                        for (Response r : resList) {
                             try {
-                                if (r.verify(_serverKey, nonce + 1)) {
-                                    acks++;
+                                if(res.verify(_serverKey, nonce + 1, wts)) {
+                                    _regularRegister.setAcklistValue();
                                 }
                             } catch (IllegalArgumentException e) {
                                 System.out.println(e.getMessage());
@@ -111,11 +111,11 @@ public class Client {
                             }
                         }
 
-                        if (acks > (_N + _f) / 2) {
-                            System.out.println("Post verified.");
-                        }
+                        System.out.println("Verifying post....");
 
-                        else {
+                        if (_regularRegister.getAcklist().size() > (_N + _f) / 2) {
+                            System.out.println("Post verified.");
+                        } else {
                             throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
                         }
 
@@ -129,21 +129,34 @@ public class Client {
 
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
+                        _regularRegister.setRid();
+                        int rid = _regularRegister.getRid();
+                        _regularRegister.clearReadlist();
+
                         for (ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
                             nonce = res.verifyNonce(_serverKey);
+
+                            messageBytes = Utils.serializeMessage(_publicKey, publicKey, nAnnouncement, nonce, rid);
+                            signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
+
+                            res = forum.read(_publicKey, publicKey, nAnnouncement, rid, signature);
+
+                            try {
+                                if(res.verify(_serverKey, publicKey, nonce + 1, rid)) {
+                                    _regularRegister.setReadlist(res);
+                                }
+                            } catch (IllegalArgumentException e) {
+                                System.out.println(e.getMessage());
+                                System.out.println("Not acknowledged. Carrying on...");
+                            }
                         }
 
-                        messageBytes = Utils.serializeMessage(_publicKey, publicKey, nAnnouncement, nonce);
-                        signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
-
-                        for (ForumInterface forum : _forums) {
-                            res = forum.read(_publicKey, publicKey, nAnnouncement, signature);
-                            resList.add(res);
+                        if (_regularRegister.getReadlist().size() > (_N + _f) / 2) {
+                            printAnnouncements(readlist);
+                        } else {
+                            throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
                         }
-
-                        verifyRead(resList, publicKey, readlist, nonce);
-                        printAnnouncements(readlist);
 
                         break;
 
@@ -238,7 +251,7 @@ public class Client {
     private void verifyRead(List<Response> resList, PublicKey publicKey, List<Response> readlist, Integer nonce) {
         for (Response r : resList) {
             try {
-                if (r.verify(_serverKey, publicKey, nonce + 1)) {
+                if (r.verify(_serverKey, publicKey, nonce + 1, rid)) {
                     readlist.add(r);
                 }
             } catch (IllegalArgumentException e) {

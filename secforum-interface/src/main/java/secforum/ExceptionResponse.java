@@ -22,22 +22,23 @@ public class ExceptionResponse extends Response {
 
     @Override
     public boolean verify(PublicKey pubKey, Integer nonce) {
-        try {
-            byte[] messageBytes = Utils.serializeMessage(_exception, nonce);
+        byte[] messageBytes = Utils.serializeMessage(_exception, nonce);
 
-            if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
-                System.out.println(_exception.getMessage());
-                return false;
-            } else {
-                throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Nonce was not returned:");
+        if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
+            System.out.println(_exception.getMessage());
+            return false;
+        } else {
+            throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
         }
     }
 
     @Override
     public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) throws IllegalArgumentException {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public boolean verify(PublicKey publicKey, Integer nonce, int ts) {
         throw new IllegalArgumentException();
     }
 
