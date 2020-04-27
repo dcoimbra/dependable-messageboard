@@ -37,7 +37,7 @@ public class WriteResponse extends Response {
     public boolean verify(PublicKey pubKey, Integer nonce) { throw new IllegalArgumentException(); }
 
     @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) throws IllegalArgumentException {
+    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException {
         throw new IllegalArgumentException();
     }
 

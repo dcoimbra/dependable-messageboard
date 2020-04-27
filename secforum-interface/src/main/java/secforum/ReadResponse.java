@@ -26,8 +26,8 @@ public class ReadResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) {
-        byte[] messageBytes = Utils.serializeMessage(_announcements, nonce);
+    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) {
+        byte[] messageBytes = Utils.serializeMessage(_announcements, nonce, rid);
 
         if (SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
             for (Announcement announcement : _announcements) {

@@ -33,7 +33,7 @@ public class ExceptionResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) throws IllegalArgumentException {
+    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException {
         throw new IllegalArgumentException();
     }
 

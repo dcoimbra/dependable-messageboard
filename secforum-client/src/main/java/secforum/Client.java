@@ -35,6 +35,7 @@ public class Client {
             String password = _keyboardSc.nextLine();
             _privateKey = Utils.loadPrivateKey(id, password);
             _regularRegister = new ByzantineRegularRegister();
+            _regularRegisterGeneral = new ByzantineRegularRegister();
 
             String name;
             for (int i = 0; i < _N; i++) {
@@ -61,11 +62,13 @@ public class Client {
                 List<String> quotedAnnouncements;
                 Response res;
                 List<Response> resList = new ArrayList<>();
-                List<Response> readlist = new ArrayList<>();
+                List<Response> readlist;
                 byte[] signature;
                 byte[] messageBytes;
                 Integer nonce = 0;
                 int acks = 0;
+                int wts;
+                int rid;
 
                 switch (command) {
                     case 1: // register
@@ -89,7 +92,7 @@ public class Client {
                         }
 
                         _regularRegister.setWts();
-                        int wts = _regularRegister.getWts();
+                        wts = _regularRegister.getWts();
                         _regularRegister.clearAcklist();
 
                         for(ForumInterface forum : _forums) {
@@ -130,7 +133,7 @@ public class Client {
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
                         _regularRegister.setRid();
-                        int rid = _regularRegister.getRid();
+                        rid = _regularRegister.getRid();
                         _regularRegister.clearReadlist();
 
                         for (ForumInterface forum : _forums) {
@@ -152,11 +155,8 @@ public class Client {
                             }
                         }
 
-                        if (_regularRegister.getReadlist().size() > (_N + _f) / 2) {
-                            printAnnouncements(readlist);
-                        } else {
-                            throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
-                        }
+                        readlist = _regularRegister.getReadlist();
+                        printAnnouncements(readlist);
 
                         break;
 
@@ -173,25 +173,22 @@ public class Client {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        for (ForumInterface forum : _forums) {
+                        _regularRegisterGeneral.setWts();
+                        wts = _regularRegisterGeneral.getWts();
+                        _regularRegisterGeneral.clearAcklist();
+
+                        for(ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
                             nonce = res.verifyNonce(_serverKey);
-                        }
 
-                        messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce);
-                        signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
+                            messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce, wts);
+                            signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
 
-                        for (ForumInterface forum : _forums) {
-                            res = forum.postGeneral(_publicKey, message, quotedAnnouncements, signature);
-                            resList.add(res);
-                        }
+                            res = forum.postGeneral(_publicKey, message, quotedAnnouncements, wts, signature);
 
-                        System.out.println("Verifying post");
-
-                        for (Response r : resList) {
                             try {
-                                if (r.verify(_serverKey, nonce + 1)) {
-                                    acks++;
+                                if(res.verify(_serverKey, nonce + 1, wts)) {
+                                    _regularRegisterGeneral.setAcklistValue();
                                 }
                             } catch (IllegalArgumentException e) {
                                 System.out.println(e.getMessage());
@@ -199,11 +196,11 @@ public class Client {
                             }
                         }
 
-                        if (acks > (_N + _f) / 2) {
-                            System.out.println("Post verified.");
-                        }
+                        System.out.println("Verifying post....");
 
-                        else {
+                        if (_regularRegisterGeneral.getAcklist().size() > (_N + _f) / 2) {
+                            System.out.println("Post verified.");
+                        } else {
                             throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
                         }
 
@@ -212,20 +209,31 @@ public class Client {
                     case 5: // readGeneral
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
+                        _regularRegister.setRid();
+                        rid = _regularRegister.getRid();
+                        _regularRegister.clearReadlist();
+
                         for (ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
                             nonce = res.verifyNonce(_serverKey);
+
+                            messageBytes = Utils.serializeMessage(_publicKey, nAnnouncement, nonce, rid);
+                            signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
+
+
+                            res = forum.readGeneral(_publicKey, nAnnouncement, rid, signature);
+
+                            try {
+                                if(res.verify(_serverKey, _publicKey, nonce + 1, rid)) {
+                                    _regularRegister.setReadlist(res);
+                                }
+                            } catch (IllegalArgumentException e) {
+                                System.out.println(e.getMessage());
+                                System.out.println("Not acknowledged. Carrying on...");
+                            }
                         }
 
-                        messageBytes = Utils.serializeMessage(_publicKey, nAnnouncement, nonce);
-                        signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
-
-                        for (ForumInterface forum : _forums) {
-                            res = forum.readGeneral(_publicKey, nAnnouncement, signature);
-                            resList.add(res);
-                        }
-
-                        verifyRead(resList, _publicKey, readlist, nonce);
+                        readlist = _regularRegister.getReadlist();
                         printAnnouncements(readlist);
 
                         break;
@@ -248,19 +256,6 @@ public class Client {
         }
     }
 
-    private void verifyRead(List<Response> resList, PublicKey publicKey, List<Response> readlist, Integer nonce) {
-        for (Response r : resList) {
-            try {
-                if (r.verify(_serverKey, publicKey, nonce + 1, rid)) {
-                    readlist.add(r);
-                }
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.getMessage());
-                System.out.println("Signature mismatch. Carrying on...");
-            }
-        }
-    }
-
     private void printAnnouncements(List<Response> readlist) throws IllegalArgumentException {
         if (readlist.size() > (_N + _f) / 2) {
             Response v = highestRes(readlist);
@@ -279,14 +274,14 @@ public class Client {
     }
 
     private Response highestRes(List<Response> readlist) {
-        int highestNonce = 0;
+        int highestTs = 0;
         Response highestResponse = null;
         for (Response res : readlist) {
             Announcement mostRecentAnnouncement = res.getAnnouncements().get(0);
-            Integer nonce = mostRecentAnnouncement.getNonce();
+            int ts = mostRecentAnnouncement.getTs();
 
-            if (nonce >= highestNonce) {
-                highestNonce = nonce;
+            if (ts >= highestTs) {
+                highestTs = ts;
                 highestResponse = res;
             }
         }

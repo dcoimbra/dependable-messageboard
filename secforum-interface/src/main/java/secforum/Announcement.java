@@ -78,6 +78,10 @@ public class Announcement implements Serializable {
         return _nonce;
     }
 
+    public int getTs() {
+        return _wts;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

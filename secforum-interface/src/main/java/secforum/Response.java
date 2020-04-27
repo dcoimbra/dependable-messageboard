@@ -39,7 +39,7 @@ public abstract class Response implements Serializable {
 
     public abstract boolean verify(PublicKey serverKey, Integer nonce) throws IllegalArgumentException;
 
-    public abstract boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce) throws IllegalArgumentException;
+    public abstract boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException;
 
     public abstract boolean verify(PublicKey publicKey, Integer nonce, int ts) throws IllegalArgumentException;
 
