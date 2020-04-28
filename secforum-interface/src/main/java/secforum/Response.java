@@ -11,6 +11,7 @@ import java.util.List;
 
 public abstract class Response implements Serializable {
     protected byte[] _signature;
+    protected int _id;
 
     public String getResponse() { return null; }
 
@@ -44,4 +45,6 @@ public abstract class Response implements Serializable {
     public abstract boolean verify(PublicKey publicKey, Integer nonce, int ts) throws IllegalArgumentException;
 
     public abstract Integer verifyNonce(PublicKey serverKey) throws IllegalArgumentException;
+
+    public abstract int getId();
 }

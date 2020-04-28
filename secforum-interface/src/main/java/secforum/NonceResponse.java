@@ -37,4 +37,9 @@ public class NonceResponse extends Response {
 
         throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
     }
+
+    @Override
+    public int getId() {
+        throw new IllegalArgumentException();
+    }
 }

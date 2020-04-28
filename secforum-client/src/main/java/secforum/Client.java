@@ -24,7 +24,7 @@ public class Client implements ClientCallbackInterface {
     private Remote _clientStub;
     private static final int _f = 1;
     private static final int _N = 3 * _f + 1;
-    private static ByzantineRegularRegister _regularRegister;
+    private static ByzantineAtomicRegister _atomicRegister;
     private static ByzantineRegularRegister _regularRegisterGeneral;
 
     public Client(String id) {
@@ -39,7 +39,7 @@ public class Client implements ClientCallbackInterface {
             System.out.println("Enter your private key password:");
             String password = _keyboardSc.nextLine();
             _privateKey = Utils.loadPrivateKey(id, password);
-            _regularRegister = new ByzantineRegularRegister();
+            _atomicRegister = new ByzantineAtomicRegister();
             _regularRegisterGeneral = new ByzantineRegularRegister();
 
             String name;
@@ -94,9 +94,9 @@ public class Client implements ClientCallbackInterface {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        _regularRegister.setWts();
-                        wts = _regularRegister.getWts();
-                        _regularRegister.clearAcklist();
+                        _atomicRegister.setWts();
+                        wts = _atomicRegister.getWts();
+                        _atomicRegister.clearAcklist();
 
                         for(ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
@@ -109,7 +109,7 @@ public class Client implements ClientCallbackInterface {
 
                             try {
                                 if(res.verify(_serverKey, nonce + 1, wts)) {
-                                    _regularRegister.setAcklistValue();
+                                    _atomicRegister.setAcklistValue();
                                 }
                             } catch (IllegalArgumentException e) {
                                 System.out.println(e.getMessage());
@@ -119,7 +119,7 @@ public class Client implements ClientCallbackInterface {
 
                         System.out.println("Verifying post....");
 
-                        if (_regularRegister.getAcklist().size() > (_N + _f) / 2) {
+                        if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
                             System.out.println("Post verified.");
                         } else {
                             throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
@@ -135,9 +135,9 @@ public class Client implements ClientCallbackInterface {
 
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
-                        _regularRegister.setRid();
-                        rid = _regularRegister.getRid();
-                        _regularRegister.clearReadlist();
+                        _atomicRegister.setRid();
+                        rid = _atomicRegister.getRid();
+                        _atomicRegister.clearAnswers();
 
                         for (ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
@@ -150,7 +150,7 @@ public class Client implements ClientCallbackInterface {
 
                             try {
                                 if(res.verify(_serverKey, publicKey, nonce + 1, rid)) {
-                                    _regularRegister.setReadlist(res);
+                                    _atomicRegister.setAnswers(res);
                                 }
                             } catch (IllegalArgumentException e) {
                                 System.out.println(e.getMessage());
@@ -158,7 +158,7 @@ public class Client implements ClientCallbackInterface {
                             }
                         }
 
-                        readlist = _regularRegister.getReadlist();
+                        readlist = _atomicRegister.getAnswers();
                         printAnnouncements(readlist);
 
                         break;
@@ -212,9 +212,9 @@ public class Client implements ClientCallbackInterface {
                     case 5: // readGeneral
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
-                        _regularRegister.setRid();
-                        rid = _regularRegister.getRid();
-                        _regularRegister.clearReadlist();
+                        _regularRegisterGeneral.setRid();
+                        rid = _regularRegisterGeneral.getRid();
+                        _regularRegisterGeneral.clearReadlist();
 
                         for (ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
@@ -228,7 +228,7 @@ public class Client implements ClientCallbackInterface {
 
                             try {
                                 if(res.verify(_serverKey, _publicKey, nonce + 1, rid)) {
-                                    _regularRegister.setReadlist(res);
+                                    _regularRegisterGeneral.setReadlist(res);
                                 }
                             } catch (IllegalArgumentException e) {
                                 System.out.println(e.getMessage());
@@ -236,7 +236,7 @@ public class Client implements ClientCallbackInterface {
                             }
                         }
 
-                        readlist = _regularRegister.getReadlist();
+                        readlist = _regularRegisterGeneral.getReadlist();
                         printAnnouncements(readlist);
 
                         break;
@@ -260,8 +260,19 @@ public class Client implements ClientCallbackInterface {
     }
 
     @Override
-    public void writeBack(List<Announcement> writeBackAnnouncements, int rid) {
-        System.out.println("Server contacted me with " + writeBackAnnouncements.size() + " announcements" + " with rid " + rid + ".");
+    public void writeBack(Response res) {
+        int rid = res.getId();
+        try {
+            if(res.verify(_serverKey, _publicKey, 0, rid)) {
+                _atomicRegister.setAnswers(res);
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+            System.out.println("Error. Insecure writeback.");
+            return;
+        }
+
+        System.out.println("Wrote back " + res.getAnnouncements() + " announcements.");
     }
 
     private void printAnnouncements(List<Response> readlist) throws IllegalArgumentException {

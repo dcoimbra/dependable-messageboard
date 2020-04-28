@@ -44,4 +44,7 @@ public class ExceptionResponse extends Response {
 
     @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
+
+    @Override
+    public int getId() { throw new IllegalArgumentException(); }
 }

@@ -43,4 +43,9 @@ public class WriteResponse extends Response {
 
     @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
+
+    @Override
+    public int getId() {
+        return _ts;
+    }
 }
