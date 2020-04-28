@@ -6,26 +6,31 @@ import security.Utils;
 import java.io.IOException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class Client {
+public class Client implements ClientCallbackInterface {
     private PublicKey _publicKey;
     private PrivateKey _privateKey;
     private PublicKey _serverKey;
     private List<ForumInterface> _forums = new ArrayList<>();
     private Scanner _keyboardSc;
+    private Remote _clientStub;
     private static final int _f = 1;
     private static final int _N = 3 * _f + 1;
     private static ByzantineRegularRegister _regularRegister;
     private static ByzantineRegularRegister _regularRegisterGeneral;
 
     public Client(String id) {
+
         try {
+            _clientStub = UnicastRemoteObject.exportObject(this, 8887 + Integer.parseInt(id));
             _keyboardSc = new Scanner(System.in);
 
             _publicKey = Utils.loadPublicKey(id);
@@ -140,10 +145,10 @@ public class Client {
                             res = forum.getNonce(_publicKey);
                             nonce = res.verifyNonce(_serverKey);
 
-                            messageBytes = Utils.serializeMessage(_publicKey, publicKey, nAnnouncement, nonce, rid);
+                            messageBytes = Utils.serializeMessage(_publicKey, publicKey, nAnnouncement, nonce, rid, _clientStub);
                             signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
 
-                            res = forum.read(_publicKey, publicKey, nAnnouncement, rid, signature);
+                            res = forum.read(_publicKey, publicKey, nAnnouncement, rid, _clientStub, signature);
 
                             try {
                                 if(res.verify(_serverKey, publicKey, nonce + 1, rid)) {
@@ -254,6 +259,11 @@ public class Client {
                 System.out.println(e.getMessage());
             }
         }
+    }
+
+    @Override
+    public void writeBack() throws RemoteException {
+        System.out.println("Server contacted me.");
     }
 
     private void printAnnouncements(List<Response> readlist) throws IllegalArgumentException {

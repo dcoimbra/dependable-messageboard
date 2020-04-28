@@ -7,6 +7,7 @@ import security.Utils;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
@@ -92,7 +93,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @param signature signature of the sender
      */
-    public synchronized Response post(PublicKey pubKey, String message, List<String> a, int wts, byte[] signature) {
+    public Response post(PublicKey pubKey, String message, List<String> a, int wts, byte[] signature) {
         Account account = _accounts.get(pubKey);
         if(account == null) {
             return _notClient;
@@ -108,8 +109,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             } else {
                 List<Announcement> announcements = verifyAnnouncements(a);
 
-                account.post(message, announcements, signature, wts);
+                List<ClientCallbackInterface> listeners = account.post(message, announcements, signature, wts);
                 System.out.println("Someone just posted in their board.");
+
+                for (ClientCallbackInterface listener : listeners) {
+                    listener.writeBack();
+                }
 
                 account.setNonce();
                 res = new WriteResponse("Successfully uploaded the post.", _privKey, account.getNonce(),account.getTs());
@@ -180,7 +185,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param signature of the sender
      * @return Response read posts
      */
-    public Response read(PublicKey senderPubKey, PublicKey pubKey, int number, int rid, byte[] signature) {
+    public Response read(PublicKey senderPubKey, PublicKey pubKey, int number, int rid, Remote clientStub, byte[] signature) {
         Account senderAccount = _accounts.get(senderPubKey);
         if(senderAccount == null) {
             return _notClient;
@@ -198,7 +203,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         } else {
             byte[] messageBytes;
             try {
-                messageBytes = Utils.serializeMessage(senderPubKey, pubKey, number, senderAccount.getNonce(), rid);
+                messageBytes = Utils.serializeMessage(senderPubKey, pubKey, number, senderAccount.getNonce(), rid, clientStub);
             } catch (IllegalArgumentException e) {
                 senderAccount.setNonce();
                 res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, senderAccount.getNonce());
@@ -213,8 +218,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                     res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, senderAccount.getNonce());
                 } else {
                     senderAccount.setNonce();
-                    List<Announcement> list = targetAccount.read(number);
+                    List<Announcement> list = targetAccount.read(number, (ClientCallbackInterface) clientStub);
                     System.out.println("Reading " + list.size() + " posts from someone's board");
+
 
                     res = new ReadResponse(list, _privKey, senderAccount.getNonce(), rid);
                     ForumServer.writeForum(this);
