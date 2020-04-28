@@ -262,8 +262,8 @@ public class Client implements ClientCallbackInterface {
     }
 
     @Override
-    public void writeBack() throws RemoteException {
-        System.out.println("Server contacted me.");
+    public void writeBack(List<Announcement> writeBackAnnouncements) throws RemoteException {
+        System.out.println("Server contacted me with " + writeBackAnnouncements.size() + " announcements.");
     }
 
     private void printAnnouncements(List<Response> readlist) throws IllegalArgumentException {

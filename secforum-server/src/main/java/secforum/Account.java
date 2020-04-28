@@ -4,7 +4,10 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 
 public class Account implements Serializable {
 
@@ -13,7 +16,7 @@ public class Account implements Serializable {
     private int _counter;
     private Integer _nonce;
     private int _ts;
-    private List<ClientCallbackInterface> _listeners;
+    private Map<ClientCallbackInterface, Integer> _listeners;
 
     public Account(PublicKey pubKey) {
         _pubKey = pubKey;
@@ -21,7 +24,11 @@ public class Account implements Serializable {
         _counter = 0;
         _nonce = 0;
         _ts = 0;
-        _listeners = new ArrayList<>();
+        _listeners = new HashMap<>();
+    }
+
+    protected Map<ClientCallbackInterface, Integer> getListeners() {
+        return _listeners;
     }
 
     public void setTs(int wts) { _ts = wts; }
@@ -44,21 +51,23 @@ public class Account implements Serializable {
         return _announcementsBoard.getAnnouncements();
     }
 
-    public synchronized List<ClientCallbackInterface> post(String message, List<Announcement> a, byte[] signature, int wts) throws RemoteException {
+    public synchronized Announcement post(String message, List<Announcement> a, byte[] signature, int wts) throws RemoteException {
         if (wts > _ts) {
             setTs(wts);
-            _announcementsBoard.post(_pubKey, message, a, _nonce, signature, _counter, wts);
+            Announcement announcement = _announcementsBoard.post(_pubKey, message, a, _nonce, signature, _counter, wts);
             _counter++;
-
-           return _listeners;
-
+            return announcement;
         } else {
             throw new RemoteException("Error. This request was already processed.");
         }
     }
 
     public List<Announcement> read(int number, ClientCallbackInterface listener) throws RemoteException {
-        _listeners.add(listener);
+        _listeners.put(listener, number);
+        return _announcementsBoard.read(number);
+    }
+
+    protected List<Announcement> read(int number) throws RemoteException {
         return _announcementsBoard.read(number);
     }
 }

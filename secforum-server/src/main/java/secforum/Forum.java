@@ -109,11 +109,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             } else {
                 List<Announcement> announcements = verifyAnnouncements(a);
 
-                List<ClientCallbackInterface> listeners = account.post(message, announcements, signature, wts);
+                Announcement announcement = account.post(message, announcements, signature, wts);
                 System.out.println("Someone just posted in their board.");
 
-                for (ClientCallbackInterface listener : listeners) {
-                    listener.writeBack();
+                for (Map.Entry<ClientCallbackInterface, Integer> listener : account.getListeners().entrySet()) {
+                    List<Announcement> writeBackAnnouncements = account.read(listener.getValue());
+                    listener.getKey().writeBack(writeBackAnnouncements);
                 }
 
                 account.setNonce();
