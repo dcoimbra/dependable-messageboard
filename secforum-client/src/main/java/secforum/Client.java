@@ -158,8 +158,7 @@ public class Client implements ClientCallbackInterface {
                             }
                         }
 
-                        readlist = _atomicRegister.getAnswers();
-                        printAnnouncements(readlist);
+                        printAnnouncementsAtomic();
 
                         break;
 
@@ -236,8 +235,7 @@ public class Client implements ClientCallbackInterface {
                             }
                         }
 
-                        readlist = _regularRegisterGeneral.getReadlist();
-                        printAnnouncements(readlist);
+                        printAnnouncements();
 
                         break;
 
@@ -275,37 +273,100 @@ public class Client implements ClientCallbackInterface {
         System.out.println("Wrote back " + res.getAnnouncements() + " announcements.");
     }
 
-    private void printAnnouncements(List<Response> readlist) throws IllegalArgumentException {
-        if (readlist.size() > (_N + _f) / 2) {
-            Response v = highestRes(readlist);
+    private void printAnnouncements() {
+        Response v = highestRes();
 
+        List<Announcement> announcements = v.getAnnouncements();
+
+        for (Announcement a : announcements) {
+            System.out.println(a);
+        }
+        System.out.println("Got " + announcements.size() + " announcements!\n");
+
+    }
+
+    private Response highestRes() throws IllegalArgumentException {
+
+        List<Response> readlist = _regularRegisterGeneral.getReadlist();
+
+        if (readlist.size() > (_N + _f) / 2) {
+
+            int highestTs = 0;
+            Response highestResponse = null;
+            for (Response res : readlist) {
+                Announcement mostRecentAnnouncement = res.getAnnouncements().get(0);
+                int ts = mostRecentAnnouncement.getTs();
+
+                if (ts >= highestTs) {
+                    highestTs = ts;
+                    highestResponse = res;
+                }
+            }
+
+            return highestResponse;
+        }
+
+        throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
+    }
+
+    private void printAnnouncementsAtomic() {
+        try {
+            Response v = bestQuorum();
             List<Announcement> announcements = v.getAnnouncements();
 
             for (Announcement a : announcements) {
                 System.out.println(a);
             }
-            System.out.println("Got " + announcements.size() + " announcements!\n");
-        }
 
-        else {
-            throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
+            System.out.println("Got " + announcements.size() + " announcements!\n");
+        } catch (IllegalArgumentException | RemoteException e) {
+            System.out.println("Error. Byzantine fault detected.");
         }
     }
 
-    private Response highestRes(List<Response> readlist) {
-        int highestTs = 0;
-        Response highestResponse = null;
-        for (Response res : readlist) {
-            Announcement mostRecentAnnouncement = res.getAnnouncements().get(0);
-            int ts = mostRecentAnnouncement.getTs();
+    private Response bestQuorum() throws RemoteException {
+        List<Response> answers = _atomicRegister.getAnswers();
+        Response selected = null;
 
-            if (ts >= highestTs) {
-                highestTs = ts;
-                highestResponse = res;
+        for (Response answer : answers) {
+            int quorumCounter = 0;
+            List<Announcement> value = answer.getAnnouncements();
+            int ts = answer.getAnnouncements().get(0).getTs();
+            for (Response otherAnswer : answers) {
+                if (otherAnswer.getAnnouncements().get(0).getTs() == ts && value.equals(otherAnswer.getAnnouncements())) {
+                    quorumCounter++;
+                }
+            }
+
+            if (quorumCounter > (_N + _f) / 2) {
+                if (selected != null) {
+                    if (selected.getAnnouncements().get(0).getTs() > answer.getAnnouncements().get(0).getTs()) {
+                        selected = answer;
+                    }
+                }
+
+                else {
+                    selected = answer;
+                }
             }
         }
+        readComplete();
+        return selected;
+    }
 
-        return highestResponse;
+    private void readComplete() throws RemoteException {
+        _atomicRegister.clearAnswers();
+        int rid = _atomicRegister.getRid();
+
+        for (ForumInterface forum : _forums) {
+            Response res = forum.getNonce(_publicKey);
+            int nonce = res.verifyNonce(_serverKey);
+
+            byte[] messageBytes = Utils.serializeMessage(_publicKey, _clientStub, nonce, rid);
+            byte[] signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
+
+            forum.readComplete(_publicKey, _clientStub, rid, signature);
+        }
     }
 
     private int requestInt(String prompt) throws NumberFormatException {

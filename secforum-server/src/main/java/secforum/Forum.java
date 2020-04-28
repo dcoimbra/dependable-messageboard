@@ -291,6 +291,42 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         return res;
     }
 
+    public Response readComplete(PublicKey pubKey, Remote clientStub, int rid, byte[] signature) {
+        Account senderAccount = _accounts.get(pubKey);
+        if(senderAccount == null) {
+            return _notClient;
+        }
+
+        Response res;
+
+        byte[] messageBytes;
+        try {
+            messageBytes = Utils.serializeMessage(pubKey, clientStub, _accounts.get(pubKey).getNonce(), rid);
+        } catch (IllegalArgumentException e) {
+            senderAccount.setNonce();
+            res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, senderAccount.getNonce());
+
+            senderAccount.setNonce();
+            return res;
+        }
+
+        try {
+            if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
+                senderAccount.setNonce();
+                res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, senderAccount.getNonce());
+            } else {
+                senderAccount.removeListener((ClientCallbackInterface) clientStub);
+                res = new WriteResponse("Removed from listeners.", _privKey, senderAccount.getNonce(), _ts);
+                ForumServer.writeForum(this);
+            }
+        } catch (IOException e) {
+            res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, senderAccount.getNonce());
+        }
+
+        senderAccount.setNonce();
+        return res;
+    }
+
     protected PublicKey loadPublicKey() {
         try {
             FileInputStream fis = new FileInputStream("src/main/resources/keystoreserver.jks");

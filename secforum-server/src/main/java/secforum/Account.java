@@ -69,4 +69,8 @@ public class Account implements Serializable {
     protected List<Announcement> read(int number) throws RemoteException {
         return _announcementsBoard.read(number);
     }
+
+    protected void removeListener(ClientCallbackInterface listener) {
+        _listeners.remove(listener);
+    }
 }

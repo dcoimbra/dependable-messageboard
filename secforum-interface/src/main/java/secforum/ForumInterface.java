@@ -18,4 +18,6 @@ public interface ForumInterface extends Remote {
     Response read(PublicKey senderPubKey, PublicKey pubKey, int number, int rid, Remote clientStub, byte[] signature) throws RemoteException;
 
     Response readGeneral(PublicKey senderPubKey, int number, int rid, byte[] signature) throws RemoteException;
+
+    Response readComplete(PublicKey pubkey, Remote clientStub, int rid, byte[] signature) throws RemoteException;
 }

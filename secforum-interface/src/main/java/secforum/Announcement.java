@@ -13,7 +13,10 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class Announcement implements Serializable {
     private String _id;
@@ -53,7 +56,13 @@ public class Announcement implements Serializable {
     }
 
     public boolean verify(PublicKey publicKey) {
-        byte[] messageBytes = Utils.serializeMessage(_pubKey, _message, _quotedAnnouncements, _nonce, _wts);
+        List<String> quotedIds = new ArrayList<>();
+
+        for (Announcement announcement : _quotedAnnouncements) {
+            quotedIds.add(announcement.getId());
+        }
+
+        byte[] messageBytes = Utils.serializeMessage(_pubKey, _message, quotedIds, _nonce, _wts);
 
         return (SigningSHA256_RSA.verify(messageBytes, _signature, publicKey));
     }
@@ -78,9 +87,7 @@ public class Announcement implements Serializable {
         return _nonce;
     }
 
-    public int getTs() {
-        return _wts;
-    }
+    public int getTs() { return _wts; }
 
     @Override
     public String toString() {
@@ -103,5 +110,17 @@ public class Announcement implements Serializable {
         builder.append("\nMessage: ").append(_message).append("\n");
 
         return builder.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Announcement that = (Announcement) o;
+        return _wts == that._wts &&
+                Objects.equals(_id, that._id) &&
+                Objects.equals(_pubKey, that._pubKey) &&
+                Objects.equals(_message, that._message) &&
+                Objects.equals(_quotedAnnouncements, that._quotedAnnouncements);
     }
 }
