@@ -58,7 +58,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         return _notClient;
     }
 
-
     /**
      *
      * @param pubKey of the user who is registered
@@ -109,16 +108,18 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             } else {
                 List<Announcement> announcements = verifyAnnouncements(a);
 
-                Announcement announcement = account.post(message, announcements, signature, wts);
+                account.post(message, announcements, signature, wts);
                 System.out.println("Someone just posted in their board.");
 
-                for (Map.Entry<ClientCallbackInterface, Integer> listener : account.getListeners().entrySet()) {
-                    List<Announcement> writeBackAnnouncements = account.read(listener.getValue());
-                    listener.getKey().writeBack(writeBackAnnouncements);
+                for (Map.Entry<ClientCallbackInterface, int[]> listener : account.getListeners().entrySet()) {
+                    int number = listener.getValue()[0];
+                    int rid = listener.getValue()[1];
+                    List<Announcement> writeBackAnnouncements = account.read(number);
+                    listener.getKey().writeBack(writeBackAnnouncements, rid);
                 }
 
                 account.setNonce();
-                res = new WriteResponse("Successfully uploaded the post.", _privKey, account.getNonce(),account.getTs());
+                res = new WriteResponse("Successfully uploaded the post.", _privKey, account.getNonce(), account.getTs());
                 ForumServer.writeForum(this);
             }
         } catch (RemoteException re) {
@@ -219,7 +220,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                     res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, senderAccount.getNonce());
                 } else {
                     senderAccount.setNonce();
-                    List<Announcement> list = targetAccount.read(number, (ClientCallbackInterface) clientStub);
+                    List<Announcement> list = targetAccount.read(number, rid, (ClientCallbackInterface) clientStub);
                     System.out.println("Reading " + list.size() + " posts from someone's board");
 
 
@@ -338,9 +339,5 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         }
 
         return null;
-    }
-
-    protected Map<PublicKey, Account> getAccounts() {
-        return _accounts;
     }
 }

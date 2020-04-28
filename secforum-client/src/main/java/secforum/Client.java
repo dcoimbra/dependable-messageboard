@@ -66,12 +66,10 @@ public class Client implements ClientCallbackInterface {
                 command = Integer.parseInt(_keyboardSc.nextLine());
                 List<String> quotedAnnouncements;
                 Response res;
-                List<Response> resList = new ArrayList<>();
                 List<Response> readlist;
                 byte[] signature;
                 byte[] messageBytes;
-                Integer nonce = 0;
-                int acks = 0;
+                Integer nonce;
                 int wts;
                 int rid;
 
@@ -262,8 +260,8 @@ public class Client implements ClientCallbackInterface {
     }
 
     @Override
-    public void writeBack(List<Announcement> writeBackAnnouncements) throws RemoteException {
-        System.out.println("Server contacted me with " + writeBackAnnouncements.size() + " announcements.");
+    public void writeBack(List<Announcement> writeBackAnnouncements, int rid) {
+        System.out.println("Server contacted me with " + writeBackAnnouncements.size() + " announcements" + " with rid " + rid + ".");
     }
 
     private void printAnnouncements(List<Response> readlist) throws IllegalArgumentException {
