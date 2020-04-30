@@ -115,7 +115,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                     int number = listener.getValue()[0];
                     int rid = listener.getValue()[1];
                     List<Announcement> writeBackAnnouncements = account.read(number);
-                    res = new ReadResponse(writeBackAnnouncements, _privKey, 0, account.getTs()); // TODO: replace 0 (experimental)
+                    res = new ReadResponse(writeBackAnnouncements, _privKey, 0, rid); // TODO: replace 0 (experimental)
                     listener.getKey().writeBack(res);
                 }
 

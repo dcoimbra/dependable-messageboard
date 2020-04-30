@@ -66,7 +66,6 @@ public class Client implements ClientCallbackInterface {
                 command = Integer.parseInt(_keyboardSc.nextLine());
                 List<String> quotedAnnouncements;
                 Response res;
-                List<Response> readlist;
                 byte[] signature;
                 byte[] messageBytes;
                 Integer nonce;
@@ -259,9 +258,8 @@ public class Client implements ClientCallbackInterface {
 
     @Override
     public void writeBack(Response res) {
-        int rid = res.getId();
         try {
-            if(res.verify(_serverKey, _publicKey, 0, rid)) {
+            if(res.verify(_serverKey, _publicKey, 0, _atomicRegister.getRid())) {
                 _atomicRegister.setAnswers(res);
             }
         } catch (IllegalArgumentException e) {
