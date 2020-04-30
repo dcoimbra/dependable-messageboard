@@ -18,19 +18,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Forum extends UnicastRemoteObject implements ForumInterface, Serializable {
+public class Forum extends UnicastRemoteObject implements ForumInterface, ForumReliableBroadcastInterface, Serializable {
 
+    private static final int _f = 1;
+    private static final int _N = 3 * _f + 1;
     private Map<PublicKey, Account> _accounts;
     private Board _generalBoard;
     private PrivateKey _privKey;
     private final ExceptionResponse _notClient;
     private int _ts;
+    private List<ForumReliableBroadcastInterface> _otherServers;
+    private boolean _sentecho;
+    private boolean _sentready;
+    private boolean _delivered;
+    private List<EchoMessage> _echos;
+    private List<EchoMessage> _readys;
 
     /**
      *
      * @throws RemoteException if there is a remote error
      */
     public Forum(String password) throws RemoteException {
+
+        _sentecho = false;
+        _sentready = false;
+        _delivered = false;
+        _echos = new ArrayList<>();
+        _readys = new ArrayList<>();
+
         _accounts = new HashMap<>();
         _generalBoard = new Board();
 
@@ -49,6 +64,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         _notClient = new ExceptionResponse(new RemoteException("Your public key is not registered."), _privKey, 0);
     }
 
+    public void setOtherServers(List<ForumReliableBroadcastInterface> otherServers) {
+        _otherServers = otherServers;
+    }
 
     public Response getNonce(PublicKey pubKey) {
         if(!verifyRegistered(pubKey)){
@@ -64,20 +82,38 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @return Response positive if successfully registered
      */
     public synchronized Response register(PublicKey pubKey) {
+
+        EchoMessageRegister message = new EchoMessageRegister(pubKey);
+
         Response res;
 
-        if(_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-            res = new ExceptionResponse(new RemoteException("Your public key is already registered."), _privKey, 0);
-        } else {
-            String text = "Registered successfully.";
-            System.out.println("Someone was registered successfully.");
-
-            res = new WriteResponse(text, _privKey, _accounts.get(pubKey).getNonce(), 0);
+        if (!_sentecho) {
+            _sentecho = true;
+            for (ForumReliableBroadcastInterface server : _otherServers) {
+                try {
+                    server.echoRegister(message);
+                } catch (RemoteException e) {
+                    res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, _accounts.get(pubKey).getNonce());
+                }
+            }
         }
 
-        try {
-            ForumServer.writeForum(this);
-        } catch (IOException e) {
+        if (_delivered) {
+            if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
+                res = new ExceptionResponse(new RemoteException("Your public key is already registered."), _privKey, 0);
+            } else {
+                String text = "Registered successfully.";
+                System.out.println("Someone was registered successfully.");
+
+                res = new WriteResponse(text, _privKey, _accounts.get(pubKey).getNonce(), 0);
+            }
+
+            try {
+                ForumServer.writeForum(this);
+            } catch (IOException e) {
+                res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, _accounts.get(pubKey).getNonce());
+            }
+        } else {
             res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, _accounts.get(pubKey).getNonce());
         }
 
@@ -376,5 +412,90 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         }
 
         return null;
+    }
+
+    @Override
+    public void echoRegister(EchoMessageRegister message) throws RemoteException {
+        _echos.add(message);
+
+        int echoCounter = 0;
+
+        for (EchoMessage echo : _echos) {
+            if (echo instanceof EchoMessageRegister && echo.getPubKey().equals(message.getPubKey())) {
+                echoCounter++;
+            }
+        }
+
+        if ((echoCounter > (_N + _f) / 2) && !_sentready) {
+            _sentready = true;
+            for (ForumReliableBroadcastInterface server : _otherServers) {
+                server.readyRegister(message);
+            }
+        }
+    }
+
+    @Override
+    public void echoPost(EchoMessagePost message) throws RemoteException {
+
+    }
+
+    @Override
+    public void echoPostGeneral(EchoMessagePost message) throws RemoteException {
+
+    }
+
+    @Override
+    public void echoRead(EchoMessageRead message) throws RemoteException {
+
+    }
+
+    @Override
+    public void echoReadGeneral(EchoMessageRead message) throws RemoteException {
+
+    }
+
+    @Override
+    public void readyRegister(EchoMessageRegister message) throws RemoteException {
+        _readys.add(message);
+
+        int readyCounter = 0;
+
+        for (EchoMessage ready : _readys) {
+            if (ready instanceof EchoMessageRegister && ready.getPubKey().equals(message.getPubKey())) {
+                readyCounter++;
+            }
+        }
+
+        if (readyCounter > _f && !_sentready) {
+            _sentready = true;
+            for (ForumReliableBroadcastInterface server : _otherServers) {
+                server.readyRegister(message);
+            }
+            return;
+        }
+
+        if ((readyCounter > 2 * _f) && !_delivered) {
+            _delivered = true;
+        }
+    }
+
+    @Override
+    public void readyPost(EchoMessagePost message) throws RemoteException {
+
+    }
+
+    @Override
+    public void readyPostGeneral(EchoMessagePost message) throws RemoteException {
+
+    }
+
+    @Override
+    public void readyRead(EchoMessageRead message) throws RemoteException {
+
+    }
+
+    @Override
+    public void readyReadGeneral(EchoMessageRead message) throws RemoteException {
+
     }
 }

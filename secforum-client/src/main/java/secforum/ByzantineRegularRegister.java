@@ -19,7 +19,7 @@ public class ByzantineRegularRegister {
         return _wts;
     }
 
-    public void setWts() {
+    public synchronized void setWts() {
         _wts++;
     }
 
@@ -31,7 +31,7 @@ public class ByzantineRegularRegister {
         _acklist.add(1);
     }
 
-    public void clearAcklist() {
+    public synchronized void clearAcklist() {
         _acklist.clear();
     }
 
@@ -39,7 +39,7 @@ public class ByzantineRegularRegister {
         return _rid;
     }
 
-    public void setRid() {
+    public synchronized void setRid() {
         _rid++;
     }
 
@@ -47,11 +47,11 @@ public class ByzantineRegularRegister {
         return _readlist;
     }
 
-    public void setReadlist(Response response) {
+    public synchronized void setReadlist(Response response) {
         _readlist.add(response);
     }
 
-    public void clearReadlist() {
+    public synchronized void clearReadlist() {
         _readlist.clear();
     }
 
