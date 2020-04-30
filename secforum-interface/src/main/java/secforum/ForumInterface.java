@@ -11,11 +11,11 @@ public interface ForumInterface extends Remote {
 
     Response register(PublicKey pubKey) throws RemoteException;
 
-    Response post(PublicKey pubKey, String message, List<String> ids, int wts, byte[] signature) throws RemoteException;
-
-    Response postGeneral(PublicKey pubKey, String message, List<String> ids, int wts, byte[] signature) throws RemoteException;
+    Response post(PublicKey pubKey, String message, List<String> ids, int wts, int rank, byte[] signature) throws RemoteException;
 
     Response read(PublicKey senderPubKey, PublicKey pubKey, int number, int rid, Remote clientStub, byte[] signature) throws RemoteException;
+
+    Response postGeneral(PublicKey pubKey, String message, List<String> ids, int rid, int ts, int rank, byte[] signature) throws RemoteException;
 
     Response readGeneral(PublicKey senderPubKey, int number, int rid, byte[] signature) throws RemoteException;
 

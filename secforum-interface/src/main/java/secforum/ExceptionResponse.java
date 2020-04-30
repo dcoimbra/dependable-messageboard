@@ -21,10 +21,25 @@ public class ExceptionResponse extends Response {
     }
 
     @Override
+    public int getId() { throw new IllegalArgumentException(); }
+
+    @Override
     public boolean verify(PublicKey pubKey, Integer nonce) {
         byte[] messageBytes = Utils.serializeMessage(_exception, nonce);
 
         if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
+        System.out.println(_exception.getMessage());
+        return false;
+    } else {
+        throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
+    }
+}
+
+    @Override
+    public boolean verify(PublicKey serverKey, Integer nonce, int requestID) {
+        byte[] messageBytes = Utils.serializeMessage(_exception, nonce);
+
+        if(SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
             System.out.println(_exception.getMessage());
             return false;
         } else {
@@ -33,18 +48,5 @@ public class ExceptionResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
-    }
-
-    @Override
-    public boolean verify(PublicKey publicKey, Integer nonce, int ts) {
-        throw new IllegalArgumentException();
-    }
-
-    @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
-
-    @Override
-    public int getId() { throw new IllegalArgumentException(); }
 }

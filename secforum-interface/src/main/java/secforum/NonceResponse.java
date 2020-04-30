@@ -10,24 +10,18 @@ public class NonceResponse extends Response {
     private Integer _nonce;
 
     public NonceResponse(PrivateKey privKey, Integer nonce) {
-        super(nonce, privKey);
+        super(nonce, privKey, null);
         _nonce = nonce;
     }
 
     @Override
-    public boolean verify(PublicKey pubKey, Integer nonce) {
-        throw new IllegalArgumentException();
-    }
+    public int getId() { throw new IllegalArgumentException(); }
 
     @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
-    }
+    public boolean verify(PublicKey pubKey, Integer nonce) { throw new IllegalArgumentException(); }
 
     @Override
-    public boolean verify(PublicKey publicKey, Integer nonce, int ts) {
-        throw new IllegalArgumentException();
-    }
+    public boolean verify(PublicKey publicKey, Integer nonce, int requestID) { throw new IllegalArgumentException(); }
 
     @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException {
@@ -36,10 +30,5 @@ public class NonceResponse extends Response {
         if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) { return _nonce; }
 
         throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-    }
-
-    @Override
-    public int getId() {
-        throw new IllegalArgumentException();
     }
 }

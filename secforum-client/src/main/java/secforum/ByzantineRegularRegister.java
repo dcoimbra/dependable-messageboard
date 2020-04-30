@@ -3,24 +3,14 @@ package secforum;
 import java.util.ArrayList;
 
 public class ByzantineRegularRegister {
-    private int _wts;
     private ArrayList<Integer> _acklist;
     private int _rid;
     private ArrayList<Response> _readlist;
 
     public ByzantineRegularRegister() {
-        _wts = 0;
         _acklist = new ArrayList<>();
         _rid = 0;
         _readlist = new ArrayList<>();
-    }
-
-    public int getWts() {
-        return _wts;
-    }
-
-    public void setWts() {
-        _wts++;
     }
 
     public ArrayList<Integer> getAcklist() {
@@ -31,9 +21,7 @@ public class ByzantineRegularRegister {
         _acklist.add(1);
     }
 
-    public void clearAcklist() {
-        _acklist.clear();
-    }
+    public void clearAcklist() { _acklist.clear(); }
 
     public int getRid() {
         return _rid;
@@ -54,5 +42,4 @@ public class ByzantineRegularRegister {
     public void clearReadlist() {
         _readlist.clear();
     }
-
 }

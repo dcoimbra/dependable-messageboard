@@ -25,6 +25,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
     private PrivateKey _privKey;
     private final ExceptionResponse _notClient;
     private int _ts;
+    private int _rank;
 
     /**
      *
@@ -41,6 +42,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             keystore.load(fis, (password).toCharArray());
             _privKey = (PrivateKey) keystore.getKey("server", (password).toCharArray());
             _ts = 0;
+            _rank = -1;
         } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | NoSuchAlgorithmException | IOException e) {
             System.out.println("Server could not load private key. SHUTTING DOWN!!!");
             System.exit(0);
@@ -92,7 +94,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @param signature signature of the sender
      */
-    public Response post(PublicKey pubKey, String message, List<String> a, int wts, byte[] signature) {
+    public Response post(PublicKey pubKey, String message, List<String> a, int wts, int rank, byte[] signature) {
         Account account = _accounts.get(pubKey);
         if(account == null) {
             return _notClient;
@@ -101,14 +103,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         Response res;
 
         try {
-            byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), wts);
+            byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), wts, rank);
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 account.setNonce();
                 res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, account.getNonce());
             } else {
                 List<Announcement> announcements = verifyAnnouncements(a);
 
-                account.post(message, announcements, signature, wts);
+                account.post(message, announcements, signature, wts, rank);
                 System.out.println("Someone just posted in their board.");
 
                 for (Map.Entry<ClientCallbackInterface, int[]> listener : account.getListeners().entrySet()) {
@@ -141,29 +143,30 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
      * @param a quoted announcements
      * @param signature of the sender
      */
-    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, int wts, byte[] signature) {
+    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, int rid, int ts, int rank, byte[] signature) {
         Account account = _accounts.get(pubKey);
         if(account == null) {
             return _notClient;
         }
 
         Response res;
-        if (wts > _ts) {
-            _ts = wts;
+        if (ts > _ts || (ts == _ts && rank > _rank)) {
+            _ts = ts;
+            _rank = rank;
 
             try {
-                byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), wts);
+                byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), ts, rank);
                 if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                     account.setNonce();
                     res = new ExceptionResponse(new RemoteException("Security error. Message was altered."), _privKey, account.getNonce());
                 } else {
                     List<Announcement> announcements = verifyAnnouncements(a);
 
-                    _generalBoard.post(pubKey, message, announcements, account.getNonce(), signature, account.getCounter(), wts);
+                    _generalBoard.post(pubKey, message, announcements, account.getNonce(), signature, account.getCounter(), ts, rank);
                     System.out.println("Someone just posted in the general board.");
 
                     account.setNonce();
-                    res = new WriteResponse("Successfully uploaded the post.", _privKey, account.getNonce(), _ts);
+                    res = new WriteResponse("Successfully uploaded the post.", _privKey, account.getNonce(), rid);
                     ForumServer.writeForum(this);
                 }
             } catch (RemoteException re) {

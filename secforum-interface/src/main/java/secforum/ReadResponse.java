@@ -22,20 +22,19 @@ public class ReadResponse extends Response {
         return _announcements;
     }
 
-
+    @Override
+    public int getId() { return _rid; }
 
     @Override
-    public boolean verify(PublicKey serverKey, Integer nonce) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
-    }
+    public boolean verify(PublicKey pubKey, Integer nonce) { throw new IllegalArgumentException(); }
 
     @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) {
-        byte[] messageBytes = Utils.serializeMessage(_announcements, nonce, rid);
+    public boolean verify(PublicKey serverKey, Integer nonce, int requestID) {
+        byte[] messageBytes = Utils.serializeMessage(_announcements, nonce, requestID);
 
         if (SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
             for (Announcement announcement : _announcements) {
-                if (!announcement.verify(publicKey)) {
+                if (!announcement.verify(announcement.getPubKey())) {
                     throw new IllegalArgumentException("ERROR. Signature mismatch: server is byzantine.");
                 }
             }
@@ -47,15 +46,5 @@ public class ReadResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey publicKey, Integer nonce, int ts) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
-    }
-
-    @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
-
-    @Override
-    public int getId() {
-        return _rid;
-    }
 }

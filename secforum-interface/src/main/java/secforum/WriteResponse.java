@@ -22,8 +22,11 @@ public class WriteResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey pubKey, Integer nonce, int ts) {
-        byte[] messageBytes = Utils.serializeMessage(_response, nonce, ts);
+    public boolean verify(PublicKey pubKey, Integer nonce) { throw new IllegalArgumentException(); }
+
+    @Override
+    public boolean verify(PublicKey pubKey, Integer nonce, int requestID) {
+        byte[] messageBytes = Utils.serializeMessage(_response, nonce, requestID);
 
         if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
             System.out.println(_response);
@@ -31,14 +34,6 @@ public class WriteResponse extends Response {
         } else {
             throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
         }
-    }
-
-    @Override
-    public boolean verify(PublicKey pubKey, Integer nonce) { throw new IllegalArgumentException(); }
-
-    @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
     }
 
     @Override

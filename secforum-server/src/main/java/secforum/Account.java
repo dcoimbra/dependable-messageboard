@@ -51,10 +51,10 @@ public class Account implements Serializable {
         return _announcementsBoard.getAnnouncements();
     }
 
-    public synchronized void post(String message, List<Announcement> a, byte[] signature, int wts) throws RemoteException {
+    public synchronized void post(String message, List<Announcement> a, byte[] signature, int wts, int rank) throws RemoteException {
         if (wts > _ts) {
             setTs(wts);
-            _announcementsBoard.post(_pubKey, message, a, _nonce, signature, _counter, wts);
+            _announcementsBoard.post(_pubKey, message, a, _nonce, signature, _counter, wts, rank);
             _counter++;
         } else {
             throw new RemoteException("Error. This request was already processed.");
