@@ -62,7 +62,7 @@ public class Client implements ClientCallbackInterface {
         PublicKey publicKey;
 
         while (true) {
-            System.out.println("1 - register\n2 - post\n3 - read\n4 - postGeneral\n5 - readGeneral\n6 - exit");
+            System.out.println("\n1 - register\n2 - post\n3 - read\n4 - postGeneral\n5 - readGeneral\n6 - exit");
 
             try {
                 command = Integer.parseInt(_keyboardSc.nextLine());
@@ -83,15 +83,15 @@ public class Client implements ClientCallbackInterface {
                         break;
 
                     case 2: // post
-                        System.out.println("Enter the message to be posted:");
+                        System.out.println("\nEnter the message to be posted:");
                         message = _keyboardSc.nextLine();
 
                         quotedAnnouncements = new ArrayList<>();
 
-                        nAnnouncement = requestInt("Enter the number of announcements to be quoted:");
+                        nAnnouncement = requestInt("\nEnter the number of announcements to be quoted:");
 
                         for (int i = 0; i < nAnnouncement; i++) {
-                            System.out.println("(" + i + 1 + ") Enter the announcement ID:");
+                            System.out.println("\n(" + i + 1 + ") Enter the announcement ID:");
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
@@ -113,15 +113,15 @@ public class Client implements ClientCallbackInterface {
                                     _atomicRegister.setAcklistValue();
                                 }
                             } catch (IllegalArgumentException e) {
-                                System.out.println(e.getMessage());
+                                System.out.println("\n" + e.getMessage());
                                 System.out.println("Not acknowledged. Carrying on...");
                             }
                         }
 
-                        System.out.println("Verifying post....");
+                        System.out.println("\nVerifying post....");
 
                         if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
-                            System.out.println("Post verified.");
+                            System.out.println("\nPost verified.");
                         } else {
                             throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
                         }
@@ -129,12 +129,12 @@ public class Client implements ClientCallbackInterface {
                         break;
 
                     case 3: // read
-                        System.out.println("Enter the id of the client you want to read from:");
+                        System.out.println("\nEnter the id of the client you want to read from:");
                         id = _keyboardSc.nextLine();
 
                         publicKey = Utils.loadPublicKey(id);
 
-                        nAnnouncement = requestInt("Enter the number of announcements to read:");
+                        nAnnouncement = requestInt("\nEnter the number of announcements to read:");
 
                         _atomicRegister.setRid();
                         rid = _atomicRegister.getRid();
@@ -154,7 +154,7 @@ public class Client implements ClientCallbackInterface {
                                     _atomicRegister.setAnswers(res);
                                 }
                             } catch (IllegalArgumentException e) {
-                                System.out.println(e.getMessage());
+                                System.out.println("\n" + e.getMessage());
                                 System.out.println("Not acknowledged. Carrying on...");
                             }
                         }
@@ -163,18 +163,18 @@ public class Client implements ClientCallbackInterface {
                         break;
 
                     case 4: // postGeneral
-                        System.out.println("Enter the message to be posted:");
+                        System.out.println("\nEnter the message to be posted:");
                         message = _keyboardSc.nextLine();
 
                         quotedAnnouncements = new ArrayList<>();
-                        nAnnouncement = requestInt("Enter the number of announcements to be quoted:");
+                        nAnnouncement = requestInt("\nEnter the number of announcements to be quoted:");
 
                         for (int i = 0; i < nAnnouncement; i++) {
-                            System.out.println("(" + i + 1 + ") Enter the announcement ID:");
+                            System.out.println("\n(" + i + 1 + ") Enter the announcement ID:");
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        System.out.println("\nStarting read phase...");
+                        System.out.println("\nStarting read phase...\n");
 
                         _regularRegisterGeneral.setRid();
                         rid = _regularRegisterGeneral.getRid();
@@ -212,16 +212,18 @@ public class Client implements ClientCallbackInterface {
                             }
                        }
 
-                        System.out.println("\nStarting write phase...");
-                        // Actual postGeneral
+                        System.out.println("\nStarting write phase...\n");
                         for(ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
                             nonce = res.verifyNonce(_serverKey);
 
-                            messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce, maxTs, _rank);
+                            byte[] announcementBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce, maxTs, _rank);
+                            byte[] announcementSignature = SigningSHA256_RSA.sign(announcementBytes, _privateKey);
+
+                            messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce, rid, maxTs, _rank);
                             signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
 
-                            res = forum.postGeneral(_publicKey, message, quotedAnnouncements, rid, maxTs, _rank, signature);
+                            res = forum.postGeneral(_publicKey, message, quotedAnnouncements, rid, maxTs, _rank, signature, announcementSignature);
 
                             try {
                                 if(res.verify(_serverKey, nonce + 1, rid)) {
@@ -232,13 +234,12 @@ public class Client implements ClientCallbackInterface {
                                 System.out.println("Not acknowledged. Carrying on...");
                             }
                         }
-
                         System.out.println("\nWrite phase has ended!");
-                        System.out.println("\nVerifying post....");
 
+                        System.out.println("\nVerifying post....");
                         if (_regularRegisterGeneral.getAcklist().size() > (_N + _f) / 2) {
                             _regularRegisterGeneral.clearAcklist();
-                            System.out.println("\nPost verified.\n");
+                            System.out.println("\nPost verified!");
                         } else {
                             throw new IllegalArgumentException("ERROR: Byzantine fault detected.\n");
                         }
@@ -317,7 +318,7 @@ public class Client implements ClientCallbackInterface {
             System.out.println(a);
         }
 
-        System.out.println("Got " + announcements.size() + " announcements!\n");
+        System.out.println("Got " + announcements.size() + " announcement(s)!");
     }
 
     private Response highestRes() throws IllegalArgumentException {
@@ -358,7 +359,7 @@ public class Client implements ClientCallbackInterface {
                 System.out.println(a);
             }
 
-            System.out.println("Got " + announcements.size() + " announcements!\n");
+            System.out.println("Got " + announcements.size() + " announcement(s)!");
         } catch (IllegalArgumentException | RemoteException e) {
             System.out.println("Error. Byzantine fault detected.");
         }

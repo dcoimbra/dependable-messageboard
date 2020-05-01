@@ -57,7 +57,7 @@ public class Announcement implements Serializable {
         _signature = signature;
     }
 
-    public boolean verify(PublicKey publicKey) {
+    public boolean verify() {
         List<String> quotedIds = new ArrayList<>();
 
         for (Announcement announcement : _quotedAnnouncements) {
@@ -66,7 +66,7 @@ public class Announcement implements Serializable {
 
         byte[] messageBytes = Utils.serializeMessage(_pubKey, _message, quotedIds, _nonce, _wts, _rank);
 
-        return (SigningSHA256_RSA.verify(messageBytes, _signature, publicKey));
+        return (SigningSHA256_RSA.verify(messageBytes, _signature, _pubKey));
     }
 
     public String getId() {

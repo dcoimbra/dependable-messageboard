@@ -57,7 +57,7 @@ public class Account implements Serializable {
             _announcementsBoard.post(_pubKey, message, a, _nonce, signature, _counter, wts, rank);
             _counter++;
         } else {
-            throw new RemoteException("Error. This request was already processed.");
+            throw new RemoteException("\nRegister error! Request already processed!");
         }
     }
 

@@ -12,18 +12,6 @@ import java.util.List;
 public abstract class Response implements Serializable {
     protected byte[] _signature;
 
-    public String getResponse() { return null; }
-
-    public List<Announcement> getAnnouncements() {
-        return null;
-    }
-
-    public RemoteException getException() {
-        return null;
-    }
-
-    public abstract int getId() throws IllegalArgumentException;
-
     public Response(Integer nonce, PrivateKey privKey, Object response) {
         byte[] messageBytes;
 
@@ -41,7 +29,17 @@ public abstract class Response implements Serializable {
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
-    public abstract boolean verify(PublicKey pubKey, Integer nonce) throws IllegalArgumentException;
+    public String getResponse() { return null; }
+
+    public List<Announcement> getAnnouncements() {
+        return null;
+    }
+
+    public RemoteException getException() {
+        return null;
+    }
+
+    public abstract int getId() throws IllegalArgumentException;
 
     public abstract boolean verify(PublicKey publicKey, Integer nonce, int requestID) throws IllegalArgumentException;
 

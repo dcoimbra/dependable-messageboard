@@ -26,23 +26,19 @@ public class ReadResponse extends Response {
     public int getId() { return _rid; }
 
     @Override
-    public boolean verify(PublicKey pubKey, Integer nonce) { throw new IllegalArgumentException(); }
-
-    @Override
     public boolean verify(PublicKey serverKey, Integer nonce, int requestID) {
         byte[] messageBytes = Utils.serializeMessage(_announcements, nonce, requestID);
 
         if (SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
             for (Announcement announcement : _announcements) {
-                if (!announcement.verify(announcement.getPubKey())) {
+                if (!announcement.verify()) {
                     throw new IllegalArgumentException("ERROR. Signature mismatch: server is byzantine.");
                 }
             }
-
             return true;
-        } else {
-            throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
         }
+
+        throw new IllegalArgumentException("\nSecurity error! Response was altered!");
     }
 
     @Override
