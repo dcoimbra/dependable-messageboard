@@ -21,8 +21,8 @@ public class Board implements Serializable {
 
     public List<Announcement> read(int number) throws RemoteException {
 
-        if (number > _announcements.size()) {
-            throw new RemoteException("Board does not have that many announcements");
+        if (number > _announcements.size() || _announcements.size() == 0) {
+            throw new RemoteException("\nRequest error! Board does not have that many announcements!");
         }
 
         if (number == 0) {

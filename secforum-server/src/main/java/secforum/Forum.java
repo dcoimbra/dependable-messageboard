@@ -28,7 +28,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
     private int _rank;
 
     private static final String POST_RESPONSE = "Successfully uploaded the post.";
-
     private static final String INTERNAL_ERROR = "\nInternal server error! Operation failed!";
     private static final String SECURITY_ERROR = "\nSecurity error! Message was altered!";
     private static final String NEGATIVE_ERROR = "\nRequest error! Number of announcements cannot be negative!";
@@ -54,7 +53,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             System.exit(0);
         }
 
-        _notClient = new ExceptionResponse(new RemoteException("\nRequest error! User is not registered."), _privKey, -1);
+        _notClient = new ExceptionResponse(new RemoteException("\nRequest error! User is not registered."), _privKey, -1, -1);
     }
 
 
@@ -75,17 +74,17 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         Response res;
 
         if(_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-            res = new ExceptionResponse(new RemoteException("\nRequest error! User is already registered!"), _privKey, 0);
+            res = new ExceptionResponse(new RemoteException("\nRequest error! User is already registered!"), _privKey, 0, -1);
         } else {
             System.out.println("Registered new user successfully.");
 
-            res = new WriteResponse("Registered successfully.", _privKey, _accounts.get(pubKey).getNonce(), 0);
+            res = new WriteResponse("Registered successfully.", _privKey, _accounts.get(pubKey).getNonce(), -1);
         }
 
         try {
             ForumServer.writeForum(this);
         } catch (IOException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, _accounts.get(pubKey).getNonce());
+            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, _accounts.get(pubKey).getNonce(), -1);
         }
 
         _accounts.get(pubKey).setNonce();
@@ -111,7 +110,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), wts, rank);
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 account.setNonce();
-                res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, account.getNonce());
+                res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, account.getNonce(), wts);
             } else {
                 List<Announcement> announcements = verifyAnnouncements(a);
 
@@ -132,9 +131,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             }
         } catch (RemoteException re) {
             account.setNonce();
-            res = new ExceptionResponse(re, _privKey, account.getNonce());
+            res = new ExceptionResponse(re, _privKey, account.getNonce(), wts);
         } catch (IOException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce());
+            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), wts);
         }
 
         account.setNonce();
@@ -163,7 +162,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                 byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), rid, ts, rank);
                 if (!SigningSHA256_RSA.verify(messageBytes, requestSignature, pubKey)) {
                     account.setNonce();
-                    res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, account.getNonce());
+                    res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, account.getNonce(), rid);
                 } else {
                     List<Announcement> announcements = verifyAnnouncements(a);
 
@@ -176,9 +175,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                 }
             } catch (RemoteException re) {
                 account.setNonce();
-                res = new ExceptionResponse(re, _privKey, account.getNonce());
+                res = new ExceptionResponse(re, _privKey, account.getNonce(), rid);
             } catch (IOException ioe) {
-                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce());
+                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), rid);
             }
 
             account.setNonce();
@@ -186,7 +185,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         }
 
         account.setNonce();
-        return new ExceptionResponse(new RemoteException("\nRegister error! Request already processed!"), _privKey, account.getNonce());
+        return new ExceptionResponse(new RemoteException("\nRegister error! Request already processed!"), _privKey, account.getNonce(), rid);
     }
 
     /**
@@ -207,17 +206,17 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         Account targetAccount = _accounts.get(pubKey);
         if(targetAccount == null) {
             senderAccount.setNonce();
-            res = new ExceptionResponse(new RemoteException("\nRequest error! Target account does not exist!"), _privKey, senderAccount.getNonce());
+            res = new ExceptionResponse(new RemoteException("\nRequest error! Target account does not exist!"), _privKey, senderAccount.getNonce(), rid);
         } else if (number < 0) {
             senderAccount.setNonce();
-            res = new ExceptionResponse(new RemoteException(NEGATIVE_ERROR), _privKey, senderAccount.getNonce());
+            res = new ExceptionResponse(new RemoteException(NEGATIVE_ERROR), _privKey, senderAccount.getNonce(), rid);
         } else {
             byte[] messageBytes;
             try {
                 messageBytes = Utils.serializeMessage(senderPubKey, pubKey, number, senderAccount.getNonce(), rid, clientStub);
             } catch (IllegalArgumentException e) {
                 senderAccount.setNonce();
-                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce());
+                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
 
                 senderAccount.setNonce();
                 return res;
@@ -226,7 +225,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             try {
                 if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
                     senderAccount.setNonce();
-                    res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, senderAccount.getNonce());
+                    res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, senderAccount.getNonce(), rid);
                 } else {
                     senderAccount.setNonce();
                     List<Announcement> list = targetAccount.read(number, rid, (ClientCallbackInterface) clientStub);
@@ -237,9 +236,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                     ForumServer.writeForum(this);
                 }
             } catch (RemoteException re) {
-                res = new ExceptionResponse(re, _privKey, senderAccount.getNonce());
+                res = new ExceptionResponse(re, _privKey, senderAccount.getNonce(), rid);
             } catch (IOException e) {
-                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce());
+                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
             }
         }
 
@@ -263,14 +262,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
 
         if(number < 0) {
             senderAccount.setNonce();
-            res = new ExceptionResponse(new RemoteException(NEGATIVE_ERROR), _privKey, senderAccount.getNonce());
+            res = new ExceptionResponse(new RemoteException(NEGATIVE_ERROR), _privKey, senderAccount.getNonce(), rid);
         } else {
             byte[] messageBytes;
             try {
                 messageBytes = Utils.serializeMessage(senderPubKey, number, _accounts.get(senderPubKey).getNonce(), rid);
             } catch (IllegalArgumentException e) {
                 senderAccount.setNonce();
-                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce());
+                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
 
                 senderAccount.setNonce();
                 return res;
@@ -279,7 +278,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             try {
                 if (!SigningSHA256_RSA.verify(messageBytes, signature, senderPubKey)) {
                     senderAccount.setNonce();
-                    res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, senderAccount.getNonce());
+                    res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, senderAccount.getNonce(), rid);
                 } else {
                     senderAccount.setNonce();
                     List<Announcement> list = _generalBoard.read(number);
@@ -289,9 +288,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
                     ForumServer.writeForum(this);
                 }
             } catch (RemoteException re) {
-                res = new ExceptionResponse(re, _privKey, senderAccount.getNonce());
+                res = new ExceptionResponse(re, _privKey, senderAccount.getNonce(), rid);
             } catch (IOException e) {
-                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce());
+                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
             }
         }
 
@@ -312,7 +311,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             messageBytes = Utils.serializeMessage(pubKey, clientStub, _accounts.get(pubKey).getNonce(), rid);
         } catch (IllegalArgumentException e) {
             senderAccount.setNonce();
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce());
+            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
 
             senderAccount.setNonce();
             return res;
@@ -321,14 +320,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
         try {
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 senderAccount.setNonce();
-                res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, senderAccount.getNonce());
+                res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, senderAccount.getNonce(), rid);
             } else {
                 senderAccount.removeListener((ClientCallbackInterface) clientStub);
                 res = new WriteResponse("Removed from listeners.", _privKey, senderAccount.getNonce(), _ts);
                 ForumServer.writeForum(this);
             }
         } catch (IOException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce());
+            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
         }
 
         senderAccount.setNonce();

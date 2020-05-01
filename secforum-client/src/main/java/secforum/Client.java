@@ -28,6 +28,8 @@ public class Client implements ClientCallbackInterface {
     private static ByzantineAtomicRegister _atomicRegister;
     private static ByzantineRegularRegister _regularRegisterGeneral;
 
+    private static final String BYZANTINE_ERROR = "\nERROR: Byzantine fault detected.";
+
     public Client(String id) {
 
         try {
@@ -67,7 +69,7 @@ public class Client implements ClientCallbackInterface {
             try {
                 command = Integer.parseInt(_keyboardSc.nextLine());
                 List<String> quotedAnnouncements;
-                Response res = null;
+                Response res;
                 byte[] signature;
                 byte[] messageBytes;
                 Integer nonce;
@@ -78,7 +80,7 @@ public class Client implements ClientCallbackInterface {
                     case 1: // register
                         for (ForumInterface forum : _forums) {
                             res = forum.register(_publicKey);
-                            res.verify(_serverKey, 0, 0);
+                            res.verify(_serverKey, 0, -1);
                         }
                         break;
 
@@ -123,7 +125,7 @@ public class Client implements ClientCallbackInterface {
                         if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
                             System.out.println("\nPost verified.");
                         } else {
-                            throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
+                            throw new IllegalArgumentException(BYZANTINE_ERROR);
                         }
 
                         break;
@@ -174,7 +176,7 @@ public class Client implements ClientCallbackInterface {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        System.out.println("\nStarting read phase...\n");
+                        System.out.println("\nStarting read phase...");
 
                         _regularRegisterGeneral.setRid();
                         rid = _regularRegisterGeneral.getRid();
@@ -202,17 +204,18 @@ public class Client implements ClientCallbackInterface {
                         System.out.println("\nRead phase has ended!");
 
                         int maxTs;
+
                         try {
-                           maxTs = highestRes().getId() + 1;
-                       } catch(IllegalArgumentException e) {
-                            if(res.getException().getMessage().equals("Board does not have that many announcements")) {
+                            maxTs = highestRes().getId() + 1;
+                        } catch (IllegalArgumentException iae) {
+                            if(_regularRegisterGeneral.getReadlist().size() < 2) {
                                 maxTs = 0;
                             } else {
-                                throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
+                                throw iae;
                             }
-                       }
+                        }
 
-                        System.out.println("\nStarting write phase...\n");
+                        System.out.println("\nStarting write phase...");
                         for(ForumInterface forum : _forums) {
                             res = forum.getNonce(_publicKey);
                             nonce = res.verifyNonce(_serverKey);
@@ -241,7 +244,7 @@ public class Client implements ClientCallbackInterface {
                             _regularRegisterGeneral.clearAcklist();
                             System.out.println("\nPost verified!");
                         } else {
-                            throw new IllegalArgumentException("ERROR: Byzantine fault detected.\n");
+                            throw new IllegalArgumentException(BYZANTINE_ERROR);
                         }
 
                         break;
@@ -286,8 +289,6 @@ public class Client implements ClientCallbackInterface {
                 }
             } catch (NumberFormatException e) {
                 System.out.println("ERROR. Must be integer.");
-            } catch (RemoteException e) {
-                System.out.println(e.detail.toString());
             } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException | IllegalArgumentException e) {
                 System.out.println(e.getMessage());
             }
@@ -326,7 +327,7 @@ public class Client implements ClientCallbackInterface {
 
         if (readlist.size() > (_N + _f) / 2) {
 
-            int highestTs = 0;
+            int highestTs = -1;
             int highestRank = -1;
             Response highestResponse = null;
 
@@ -346,7 +347,7 @@ public class Client implements ClientCallbackInterface {
             return highestResponse;
         }
 
-        throw new IllegalArgumentException("ERROR: Byzantine fault detected.");
+        throw new IllegalArgumentException(BYZANTINE_ERROR);
     }
 
     private void printAnnouncementsAtomic() {
@@ -360,8 +361,8 @@ public class Client implements ClientCallbackInterface {
             }
 
             System.out.println("Got " + announcements.size() + " announcement(s)!");
-        } catch (IllegalArgumentException | RemoteException e) {
-            System.out.println("Error. Byzantine fault detected.");
+        } catch (IllegalArgumentException | RemoteException | NullPointerException e) {
+            System.out.println(BYZANTINE_ERROR);
         }
     }
 
@@ -373,6 +374,7 @@ public class Client implements ClientCallbackInterface {
             int quorumCounter = 0;
             List<Announcement> value = answer.getAnnouncements();
             int ts = answer.getAnnouncements().get(0).getTs();
+
             for (Response otherAnswer : answers) {
                 if (otherAnswer.getAnnouncements().get(0).getTs() == ts && value.equals(otherAnswer.getAnnouncements())) {
                     quorumCounter++;

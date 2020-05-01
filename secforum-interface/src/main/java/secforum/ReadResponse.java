@@ -11,6 +11,8 @@ public class ReadResponse extends Response {
     private List<Announcement> _announcements;
     private int _rid;
 
+    private static final String SECURITY_ERROR = "\nSecurity error! Response was altered!";
+
     public ReadResponse(List<Announcement> announcements, PrivateKey privKey, Integer nonce, int rid) {
         super(nonce, privKey, announcements, rid);
         _announcements = announcements;
@@ -32,13 +34,13 @@ public class ReadResponse extends Response {
         if (SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
             for (Announcement announcement : _announcements) {
                 if (!announcement.verify()) {
-                    throw new IllegalArgumentException("ERROR. Signature mismatch: server is byzantine.");
+                    throw new IllegalArgumentException(SECURITY_ERROR);
                 }
             }
             return true;
         }
 
-        throw new IllegalArgumentException("\nSecurity error! Response was altered!");
+        throw new IllegalArgumentException(SECURITY_ERROR);
     }
 
     @Override

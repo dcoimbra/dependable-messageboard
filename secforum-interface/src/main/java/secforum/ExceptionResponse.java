@@ -9,12 +9,14 @@ import java.security.PublicKey;
 
 public class ExceptionResponse extends Response {
     private RemoteException _exception;
+    private int _requestID;
 
     private static final String SECURITY_ERROR = "\nSecurity error! Response was altered!";
 
-    public ExceptionResponse(RemoteException exception, PrivateKey privKey, Integer nonce) {
-        super(nonce, privKey, exception);
+    public ExceptionResponse(RemoteException exception, PrivateKey privKey, Integer nonce, int requestID) {
+        super(nonce, privKey, exception, requestID);
         _exception = exception;
+        _requestID = requestID;
     }
 
     @Override
@@ -23,11 +25,13 @@ public class ExceptionResponse extends Response {
     }
 
     @Override
-    public int getId() { throw new IllegalArgumentException(); }
+    public int getId() {
+        return _requestID;
+    }
 
     @Override
     public boolean verify(PublicKey serverKey, Integer nonce, int requestID) {
-        byte[] messageBytes = Utils.serializeMessage(_exception, nonce);
+        byte[] messageBytes = Utils.serializeMessage(_exception, nonce, requestID);
 
         if(SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
             System.out.println(_exception.getMessage());

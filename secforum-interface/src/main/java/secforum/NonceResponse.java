@@ -10,7 +10,7 @@ public class NonceResponse extends Response {
     private Integer _nonce;
 
     public NonceResponse(PrivateKey privKey, Integer nonce) {
-        super(nonce, privKey, null);
+        super(nonce, privKey);
         _nonce = nonce;
     }
 

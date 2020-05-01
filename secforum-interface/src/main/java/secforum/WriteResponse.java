@@ -22,6 +22,11 @@ public class WriteResponse extends Response {
     }
 
     @Override
+    public int getId() {
+        return _ts;
+    }
+
+    @Override
     public boolean verify(PublicKey pubKey, Integer nonce, int requestID) {
         byte[] messageBytes = Utils.serializeMessage(_response, nonce, requestID);
 
@@ -34,9 +39,4 @@ public class WriteResponse extends Response {
 
     @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
-
-    @Override
-    public int getId() {
-        return _ts;
-    }
 }
