@@ -187,7 +187,7 @@ public class Client implements ClientCallbackInterface {
                         int maxTs;
 
                         try {
-                            maxTs = highestRes().getId() + 1;
+                            maxTs = highestRes().getAnnouncements().get(0).getTs() + 1;
                         } catch (IllegalArgumentException iae) {
                             if(_regularRegisterGeneral.getReadlist().size() < 2) {
                                 maxTs = 0;
