@@ -17,10 +17,11 @@ public class PostRequest implements Runnable {
     private String _message;
     private List<String> _quotedAnnouncements;
     private Integer _wts;
+    private int _rank;
     private final ByzantineAtomicRegister _atomicRegister;
 
     public PostRequest(ForumInterface forum, PrivateKey privateKey, PublicKey publicKey, PublicKey serverKey,
-                       String message, List<String> quotedAnnouncements, int wts, ByzantineAtomicRegister atomicRegister) {
+                       String message, List<String> quotedAnnouncements, int wts, int rank, ByzantineAtomicRegister atomicRegister) {
         _forum = forum;
         _privateKey = privateKey;
         _publicKey = publicKey;
@@ -28,6 +29,7 @@ public class PostRequest implements Runnable {
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
         _wts = wts;
+        _rank = rank;
         _atomicRegister = atomicRegister;
     }
 
@@ -37,10 +39,10 @@ public class PostRequest implements Runnable {
             Response res = _forum.getNonce(_publicKey);
             Integer nonce = res.verifyNonce(_serverKey);
 
-            byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, nonce, _wts);
+            byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, nonce, _wts, _rank);
             byte[] signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
 
-            res = _forum.post(_publicKey, _message, _quotedAnnouncements, _wts, signature);
+            res = _forum.post(_publicKey, _message, _quotedAnnouncements, _wts, _rank, signature);
 
             try {
                 if (res.verify(_serverKey, nonce + 1, _wts)) {

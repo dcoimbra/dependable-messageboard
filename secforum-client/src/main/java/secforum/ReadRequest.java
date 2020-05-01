@@ -47,7 +47,7 @@ public class ReadRequest implements Runnable {
             res = _forum.read(_publicKey, _targetKey, _nAnnouncement, _rid, _clientStub, signature);
 
             try {
-                if(res.verify(_serverKey, _targetKey, nonce + 1, _rid)) {
+                if(res.verify(_serverKey,nonce + 1, _rid)) {
                     synchronized (_atomicRegister) {
                         _atomicRegister.setAnswers(res);
                     }

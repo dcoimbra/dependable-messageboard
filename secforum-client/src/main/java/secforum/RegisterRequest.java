@@ -19,7 +19,7 @@ public class RegisterRequest  implements Runnable {
 
         try {
             Response res = _forum.register(_publicKey);
-            res.verify(_serverKey, 0, 0);
+            res.verify(_serverKey, 0, -1);
         } catch (RemoteException e) {
             System.out.println(e.detail.toString());
         }

@@ -32,7 +32,6 @@ public class ReadGeneralRequest implements Runnable {
     @Override
     public void run() {
         try {
-
             Response res = _forum.getNonce(_publicKey);
             Integer nonce = res.verifyNonce(_serverKey);
 
@@ -42,7 +41,7 @@ public class ReadGeneralRequest implements Runnable {
             res = _forum.readGeneral(_publicKey, _nAnnouncement, _rid, signature);
 
             try {
-                if(res.verify(_serverKey, _publicKey, nonce + 1, _rid)) {
+                if(res.verify(_serverKey, nonce + 1, _rid)) {
                     synchronized (_regularRegisterGeneral) {
                         _regularRegisterGeneral.setReadlist(res);
                     }

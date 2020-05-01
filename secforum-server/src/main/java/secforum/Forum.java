@@ -89,9 +89,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         Response res;
 
         try {
-            echoMessage = (EchoMessageRegister) byzantineReliableBroadcast(echoMessage);
+            byzantineReliableBroadcast(echoMessage);
         } catch (InterruptedException | RemoteException e) {
-           res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, 0);
+           res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, 0, -1);
         }
 
         if (_delivered) {
@@ -113,8 +113,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             _accounts.get(pubKey).setNonce();
             return res;
         }
-        res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, -1);
-        _accounts.get(pubKey).setNonce();
+        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, 0,-1);
         return res;
     }
 
@@ -136,9 +135,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         Response res;
 
         try {
-            echoMessage = (EchoMessagePost) byzantineReliableBroadcast(echoMessage);
+            byzantineReliableBroadcast(echoMessage);
         } catch (InterruptedException | RemoteException e) {
-            res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, account.getNonce());
+            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), wts);
         }
 
         if (_delivered) {
@@ -168,16 +167,16 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
                 }
             } catch (RemoteException re) {
                 account.setNonce();
-                res = new ExceptionResponse(re, _privKey, account.getNonce());
+                res = new ExceptionResponse(re, _privKey, account.getNonce(), wts);
             } catch (IOException e) {
-                res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, account.getNonce());
+                res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), wts);
             }
 
             account.setNonce();
             return res;
         }
 
-        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce());
+        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), wts);
         account.setNonce();
         return res;
     }
@@ -189,18 +188,19 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @param a quoted announcements
      * @param requestSignature of the sender
      */
-    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, int rid, int ts, int rank, byte[] requestSignature, byte[] announcementSignature) {
+    public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, int rid, int ts,
+                                             int rank, byte[] requestSignature, byte[] announcementSignature) {
         Account account = _accounts.get(pubKey);
         if(account == null) {
             return _notClient;
         }
       
-        EchoMessage echoMessage = new EchoMessagePostGeneral(pubKey, message, a, wts);
+        EchoMessage echoMessage = new EchoMessagePostGeneral(pubKey, message, a, rid, ts, rank);
 
         Response res;
 
         try {
-            echoMessage = (EchoMessagePostGeneral) byzantineReliableBroadcast(echoMessage);
+            byzantineReliableBroadcast(echoMessage);
         } catch (InterruptedException | RemoteException e) {
             res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), rid);
         }
@@ -263,9 +263,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         Response res;
         try {
-            echoMessage = (EchoMessageRead) byzantineReliableBroadcast(echoMessage);
+            byzantineReliableBroadcast(echoMessage);
         } catch (InterruptedException | RemoteException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce());
+            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
         }
 
         if (_delivered) {
@@ -284,7 +284,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
                     messageBytes = Utils.serializeMessage(senderPubKey, pubKey, number, senderAccount.getNonce(), rid, clientStub);
                 } catch (IllegalArgumentException e) {
                     senderAccount.setNonce();
-                    res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid)
+                    res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
                     senderAccount.setNonce();
                     return res;
                 }
@@ -333,7 +333,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         Response res;
 
         try {
-            echoMessage = (EchoMessageReadGeneral) byzantineReliableBroadcast(echoMessage);
+            byzantineReliableBroadcast(echoMessage);
         } catch (InterruptedException | RemoteException e) {
             res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
         }
@@ -497,7 +497,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
 
-    public EchoMessage byzantineReliableBroadcast(EchoMessage message) throws InterruptedException, RemoteException {
+    public void byzantineReliableBroadcast(EchoMessage message) throws InterruptedException, RemoteException {
         List<Thread> threads = new ArrayList<>();
 
         System.out.println("Echo.");
@@ -551,12 +551,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         System.out.println("Ready quorum. Delivering message.");
         _delivered = true;
-        message = readyMessage;
-
         _echos.clear();
         _readys.clear();
-
-        return message;
     }
 
 
