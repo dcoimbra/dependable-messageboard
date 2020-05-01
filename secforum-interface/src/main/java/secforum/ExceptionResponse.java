@@ -9,10 +9,14 @@ import java.security.PublicKey;
 
 public class ExceptionResponse extends Response {
     private RemoteException _exception;
+    private int _requestID;
 
-    public ExceptionResponse(RemoteException exception, PrivateKey privKey, Integer nonce) {
-        super(nonce, privKey, exception);
+    private static final String SECURITY_ERROR = "\nSecurity error! Response was altered!";
+
+    public ExceptionResponse(RemoteException exception, PrivateKey privKey, Integer nonce, int requestID) {
+        super(nonce, privKey, exception, requestID);
         _exception = exception;
+        _requestID = requestID;
     }
 
     @Override
@@ -21,30 +25,30 @@ public class ExceptionResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey pubKey, Integer nonce) {
-        byte[] messageBytes = Utils.serializeMessage(_exception, nonce);
+    public int getId() {
+        return _requestID;
+    }
 
-        if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
-            System.out.println(_exception.detail.toString());
+    @Override
+    public boolean verify(PublicKey serverKey, Integer nonce, int requestID) {
+        byte[] messageBytes = Utils.serializeMessage(_exception, nonce, requestID);
+
+        if(SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
+            System.out.println(_exception.getMessage());
             return false;
-        } else {
-            throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
         }
+
+        throw new IllegalArgumentException(SECURITY_ERROR);
     }
 
     @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
+    public Integer verifyNonce(PublicKey serverKey) throws IllegalArgumentException {
+        byte[] messageBytes = Utils.serializeMessage(_exception, -1);
+
+        if(SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
+            throw new IllegalArgumentException(_exception.getMessage());
+        }
+
+        throw new IllegalArgumentException(SECURITY_ERROR);
     }
-
-    @Override
-    public boolean verify(PublicKey publicKey, Integer nonce, int ts) {
-        throw new IllegalArgumentException();
-    }
-
-    @Override
-    public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
-
-    @Override
-    public int getId() { throw new IllegalArgumentException(); }
 }

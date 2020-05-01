@@ -15,31 +15,18 @@ public class NonceResponse extends Response {
     }
 
     @Override
-    public boolean verify(PublicKey pubKey, Integer nonce) {
-        throw new IllegalArgumentException();
-    }
+    public int getId() { throw new IllegalArgumentException(); }
 
     @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
-    }
-
-    @Override
-    public boolean verify(PublicKey publicKey, Integer nonce, int ts) {
-        throw new IllegalArgumentException();
-    }
+    public boolean verify(PublicKey serverKey, Integer nonce, int requestID) { throw new IllegalArgumentException(); }
 
     @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException {
         byte[] messageBytes = Utils.serializeMessage(_nonce);
 
-        if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) { return _nonce; }
-
-        throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
-    }
-
-    @Override
-    public int getId() {
-        throw new IllegalArgumentException();
+        if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
+            return _nonce;
+        }
+        throw new IllegalArgumentException("\nSecurity error! Response was altered!");
     }
 }

@@ -26,6 +26,7 @@ public class Announcement implements Serializable {
     private LocalDateTime _timestamp;
     private Integer _nonce;
     private int _wts;
+    private int _rank;
     private byte[] _signature;
 
     /**
@@ -36,7 +37,7 @@ public class Announcement implements Serializable {
      * @param signature Signature of the author
      * @throws RemoteException if a message is longer than 255 characters ot if any of the arguments are null
      */
-    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, Integer nonce, byte[] signature, int counter, int wts) throws RemoteException {
+    public Announcement(PublicKey pubKey, String message, List<Announcement> quotedAnnouncements, Integer nonce, byte[] signature, int counter, int wts, int rank) throws RemoteException {
         if (message == null || pubKey == null || quotedAnnouncements == null) {
             throw new RemoteException("Arguments cannot be null");
         }
@@ -52,19 +53,20 @@ public class Announcement implements Serializable {
         _timestamp = LocalDateTime.now();
         _nonce = nonce;
         _wts = wts;
+        _rank = rank;
         _signature = signature;
     }
 
-    public boolean verify(PublicKey publicKey) {
+    public boolean verify() {
         List<String> quotedIds = new ArrayList<>();
 
         for (Announcement announcement : _quotedAnnouncements) {
             quotedIds.add(announcement.getId());
         }
 
-        byte[] messageBytes = Utils.serializeMessage(_pubKey, _message, quotedIds, _nonce, _wts);
+        byte[] messageBytes = Utils.serializeMessage(_pubKey, _message, quotedIds, _nonce, _wts, _rank);
 
-        return (SigningSHA256_RSA.verify(messageBytes, _signature, publicKey));
+        return (SigningSHA256_RSA.verify(messageBytes, _signature, _pubKey));
     }
 
     public String getId() {
@@ -88,6 +90,8 @@ public class Announcement implements Serializable {
     }
 
     public int getTs() { return _wts; }
+
+    public int getRank() {return _rank; }
 
     @Override
     public String toString() {

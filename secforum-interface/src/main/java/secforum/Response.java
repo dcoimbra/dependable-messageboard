@@ -11,20 +11,9 @@ import java.util.List;
 
 public abstract class Response implements Serializable {
     protected byte[] _signature;
-    protected int _id;
 
-    public String getResponse() { return null; }
-
-    public List<Announcement> getAnnouncements() {
-        return null;
-    }
-
-    public RemoteException getException() {
-        return null;
-    }
-
-    public Response(Integer nonce, PrivateKey privKey, Object response) {
-        byte[] messageBytes = Utils.serializeMessage(response, nonce);
+    public Response(Integer nonce, PrivateKey privKey) {
+        byte[] messageBytes = Utils.serializeMessage(nonce);
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
@@ -33,18 +22,15 @@ public abstract class Response implements Serializable {
         _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
     }
 
-    public Response(Integer nonce, PrivateKey privKey) {
-        byte[] messageBytes = Utils.serializeMessage(nonce);
-        _signature = SigningSHA256_RSA.sign(messageBytes, privKey);
-    }
+    public String getResponse() { return null; }
 
-    public abstract boolean verify(PublicKey serverKey, Integer nonce) throws IllegalArgumentException;
+    public List<Announcement> getAnnouncements() { return null; }
 
-    public abstract boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) throws IllegalArgumentException;
+    public RemoteException getException() { return null; }
 
-    public abstract boolean verify(PublicKey publicKey, Integer nonce, int ts) throws IllegalArgumentException;
+    public abstract int getId() throws IllegalArgumentException;
+
+    public abstract boolean verify(PublicKey publicKey, Integer nonce, int requestID) throws IllegalArgumentException;
 
     public abstract Integer verifyNonce(PublicKey serverKey) throws IllegalArgumentException;
-
-    public abstract int getId();
 }

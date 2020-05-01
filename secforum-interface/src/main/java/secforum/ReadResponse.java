@@ -11,6 +11,8 @@ public class ReadResponse extends Response {
     private List<Announcement> _announcements;
     private int _rid;
 
+    private static final String SECURITY_ERROR = "\nSecurity error! Response was altered!";
+
     public ReadResponse(List<Announcement> announcements, PrivateKey privKey, Integer nonce, int rid) {
         super(nonce, privKey, announcements, rid);
         _announcements = announcements;
@@ -22,40 +24,25 @@ public class ReadResponse extends Response {
         return _announcements;
     }
 
-
+    @Override
+    public int getId() { return _rid; }
 
     @Override
-    public boolean verify(PublicKey serverKey, Integer nonce) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
-    }
-
-    @Override
-    public boolean verify(PublicKey serverKey, PublicKey publicKey, Integer nonce, int rid) {
-        byte[] messageBytes = Utils.serializeMessage(_announcements, nonce, rid);
+    public boolean verify(PublicKey serverKey, Integer nonce, int requestID) {
+        byte[] messageBytes = Utils.serializeMessage(_announcements, nonce, requestID);
 
         if (SigningSHA256_RSA.verify(messageBytes, _signature, serverKey)) {
             for (Announcement announcement : _announcements) {
-                if (!announcement.verify(publicKey)) {
-                    throw new IllegalArgumentException("ERROR. Signature mismatch: server is byzantine.");
+                if (!announcement.verify()) {
+                    throw new IllegalArgumentException(SECURITY_ERROR);
                 }
             }
-
             return true;
-        } else {
-            throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");
         }
-    }
 
-    @Override
-    public boolean verify(PublicKey publicKey, Integer nonce, int ts) throws IllegalArgumentException {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException(SECURITY_ERROR);
     }
 
     @Override
     public Integer verifyNonce(PublicKey pubKey) throws IllegalArgumentException { throw new IllegalArgumentException(); }
-
-    @Override
-    public int getId() {
-        return _rid;
-    }
 }
