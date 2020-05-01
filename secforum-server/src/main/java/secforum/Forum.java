@@ -83,14 +83,18 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      */
     public synchronized Response register(PublicKey pubKey) {
 
+        System.out.println("Got a message.");
         EchoMessageRegister message = new EchoMessageRegister(pubKey);
 
         Response res;
 
+        System.out.println(_sentecho);
         if (!_sentecho) {
+            System.out.println("Did not send an echo yet.");
             _sentecho = true;
             for (ForumReliableBroadcastInterface server : _otherServers) {
                 try {
+                    System.out.println("Sending an echo.");
                     server.echoRegister(message);
                 } catch (RemoteException e) {
                     res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, _accounts.get(pubKey).getNonce());
@@ -98,22 +102,21 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             }
         }
 
-        if (_delivered) {
-            if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-                res = new ExceptionResponse(new RemoteException("Your public key is already registered."), _privKey, 0);
-            } else {
-                String text = "Registered successfully.";
-                System.out.println("Someone was registered successfully.");
+        System.out.println("Already sent an echo.");
 
-                res = new WriteResponse(text, _privKey, _accounts.get(pubKey).getNonce(), 0);
-            }
-
-            try {
-                ForumServer.writeForum(this);
-            } catch (IOException e) {
-                res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, _accounts.get(pubKey).getNonce());
-            }
+        while (_delivered) {}
+        if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
+            res = new ExceptionResponse(new RemoteException("Your public key is already registered."), _privKey, 0);
         } else {
+            String text = "Registered successfully.";
+            System.out.println("Someone was registered successfully.");
+
+            res = new WriteResponse(text, _privKey, _accounts.get(pubKey).getNonce(), 0);
+        }
+
+        try {
+            ForumServer.writeForum(this);
+        } catch (IOException e) {
             res = new ExceptionResponse(new RemoteException("Internal server error."), _privKey, _accounts.get(pubKey).getNonce());
         }
 
@@ -416,6 +419,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
     @Override
     public void echoRegister(EchoMessageRegister message) throws RemoteException {
+        System.out.println("Got an echo.");
         _echos.add(message);
 
         int echoCounter = 0;
@@ -427,8 +431,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         }
 
         if ((echoCounter > (_N + _f) / 2) && !_sentready) {
+            System.out.println("Echo quorum. I'm not ready yet.");
             _sentready = true;
             for (ForumReliableBroadcastInterface server : _otherServers) {
+                System.out.println("I'm ready.");
                 server.readyRegister(message);
             }
         }
@@ -456,6 +462,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
     @Override
     public void readyRegister(EchoMessageRegister message) throws RemoteException {
+        System.out.println("Someone is ready.");
         _readys.add(message);
 
         int readyCounter = 0;
@@ -467,14 +474,17 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         }
 
         if (readyCounter > _f && !_sentready) {
+            System.out.println("I need to be ready now.");
             _sentready = true;
             for (ForumReliableBroadcastInterface server : _otherServers) {
+                System.out.println("I'm ready.");
                 server.readyRegister(message);
             }
             return;
         }
 
         if ((readyCounter > 2 * _f) && !_delivered) {
+            System.out.println("Everyone is ready. Delivering message.");
             _delivered = true;
         }
     }

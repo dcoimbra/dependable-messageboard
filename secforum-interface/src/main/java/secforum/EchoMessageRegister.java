@@ -8,6 +8,7 @@ public class EchoMessageRegister extends EchoMessage {
 
     public EchoMessageRegister(PublicKey pubKey) {
         super(pubKey);
+        System.out.println("Created a message here.");
     }
 
     @Override

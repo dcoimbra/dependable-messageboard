@@ -25,7 +25,7 @@ public class ExceptionResponse extends Response {
         byte[] messageBytes = Utils.serializeMessage(_exception, nonce);
 
         if(SigningSHA256_RSA.verify(messageBytes, _signature, pubKey)) {
-            System.out.println(_exception.getMessage());
+            System.out.println(_exception.detail.toString());
             return false;
         } else {
             throw new IllegalArgumentException("ERROR. SECURITY VIOLATION WAS DETECTED!!");

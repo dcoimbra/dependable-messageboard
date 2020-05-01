@@ -1,10 +1,11 @@
 package secforum;
 
+import java.io.Serializable;
 import java.rmi.Remote;
 import java.security.PublicKey;
 import java.util.List;
 
-public abstract class EchoMessage {
+public abstract class EchoMessage implements Serializable {
     private PublicKey _pubKey;
 
     public EchoMessage(PublicKey pubKey) {

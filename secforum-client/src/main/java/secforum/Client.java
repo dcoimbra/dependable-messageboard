@@ -67,17 +67,19 @@ public class Client implements ClientCallbackInterface {
                 List<Thread> threads = new ArrayList<>();
                 List<String> quotedAnnouncements;
                 Response res;
-                byte[] signature;
-                byte[] messageBytes;
-                Integer nonce;
                 int wts;
                 int rid;
 
                 switch (command) {
                     case 1: // register
-                        for (ForumInterface forum : _forums) {
-                            res = forum.register(_publicKey);
-                            res.verify(_serverKey, 0, 0);
+                        for (int i = 0; i < _N; i++) {
+                            threads.add(new Thread(new RegisterRequest(_forums.get(i), _publicKey, _serverKey)));
+                            threads.get(i).start();
+                        }
+
+                        for (Thread t : threads) {
+                            t.join();
+                            System.out.println("Thread joined.");
                         }
                         break;
 
@@ -216,8 +218,6 @@ public class Client implements ClientCallbackInterface {
                 }
             } catch (NumberFormatException e) {
                 System.out.println("ERROR. Must be integer.");
-            } catch (RemoteException e) {
-                System.out.println(e.detail.toString());
             } catch (InterruptedException e) {
                 System.out.println("Thread interrupted.");
             } catch (Exception e) {
