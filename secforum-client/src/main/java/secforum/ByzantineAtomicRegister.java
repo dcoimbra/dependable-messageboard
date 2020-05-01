@@ -2,6 +2,7 @@ package secforum;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ByzantineAtomicRegister {
     private int _wts;
@@ -11,16 +12,16 @@ public class ByzantineAtomicRegister {
 
     public ByzantineAtomicRegister() {
         _wts = 0;
-        _acklist = new ArrayList<>();
+        _acklist = new CopyOnWriteArrayList<>();
         _rid = 0;
-        _answers = new ArrayList<>();
+        _answers = new CopyOnWriteArrayList<>();
     }
 
     public int getWts() {
         return _wts;
     }
 
-    public void setWts() {
+    public synchronized void setWts() {
         _wts++;
     }
 
@@ -28,11 +29,11 @@ public class ByzantineAtomicRegister {
         return _acklist;
     }
 
-    public void setAcklistValue() {
+    public synchronized void setAcklistValue() {
         _acklist.add(1);
     }
 
-    public void clearAcklist() {
+    public synchronized void clearAcklist() {
         _acklist.clear();
     }
 
@@ -40,7 +41,7 @@ public class ByzantineAtomicRegister {
         return _rid;
     }
 
-    public void setRid() {
+    public synchronized void setRid() {
         _rid++;
     }
 
@@ -48,10 +49,9 @@ public class ByzantineAtomicRegister {
         return _answers;
     }
 
-    public void setAnswers(Response response) { _answers.add(response);
-    }
+    public synchronized void setAnswers(Response response) { _answers.add(response); }
 
-    public void clearAnswers() {
+    public synchronized void clearAnswers() {
         _answers.clear();
     }
 

@@ -1,8 +1,14 @@
 package secforum;
 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ForumServer {
 
@@ -62,6 +68,29 @@ public class ForumServer {
         backup.close();
     }
 
+    public static List<ForumReliableBroadcastInterface> searchForums(int id) {
+
+        List<ForumReliableBroadcastInterface> otherServers = new ArrayList<>();
+
+        System.out.println("Looking for other servers...");
+
+        boolean foundServer = false;
+
+        for (int i = 0; i < 4; i++) {
+            foundServer = false;
+            while (!foundServer && i != id) {
+                String name = "//localhost:" + (1099 + i) + "/forum" + i;
+                try {
+                    otherServers.add((ForumReliableBroadcastInterface) Naming.lookup(name));
+                    System.out.println("Found server: " + name);
+                    foundServer = true;
+                } catch (MalformedURLException | RemoteException | NotBoundException ignored) {}
+            }
+        }
+
+        return otherServers;
+    }
+
     public static void main(String[] args) {
         String password = args[0];
         int id = Integer.parseInt(args[1]);
@@ -75,10 +104,13 @@ public class ForumServer {
             try {
                 ForumServer.readForum();
             } catch (FileNotFoundException e) {
-                _forum = new Forum(args[0]);
+                _forum = new Forum(password);
             }
             Registry rmiRegistry = LocateRegistry.createRegistry(registryPort + id);
             rmiRegistry.rebind("forum" + id, ForumServer.getForum());
+
+            List<ForumReliableBroadcastInterface> otherServers = searchForums(id);
+            ForumServer.getForum().setOtherServers(otherServers);
 
             System.out.println("Forum server ready");
 

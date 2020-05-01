@@ -24,10 +24,9 @@ public class Client implements ClientCallbackInterface {
     private Remote _clientStub;
     private static final int _f = 1;
     private static final int _N = 3 * _f + 1;
-    private static int _rank;
-    private static ByzantineAtomicRegister _atomicRegister;
-    private static ByzantineRegularRegister _regularRegisterGeneral;
-
+    private ByzantineAtomicRegister _atomicRegister;
+    private ByzantineRegularRegister _regularRegisterGeneral;
+    private static final int _rank;
     private static final String BYZANTINE_ERROR = "\nERROR: Byzantine fault detected.";
 
     public Client(String id) {
@@ -68,19 +67,22 @@ public class Client implements ClientCallbackInterface {
 
             try {
                 command = Integer.parseInt(_keyboardSc.nextLine());
+                List<Thread> threads = new ArrayList<>();
                 List<String> quotedAnnouncements;
                 Response res;
-                byte[] signature;
-                byte[] messageBytes;
-                Integer nonce;
                 int wts;
                 int rid;
 
                 switch (command) {
                     case 1: // register
-                        for (ForumInterface forum : _forums) {
-                            res = forum.register(_publicKey);
-                            res.verify(_serverKey, 0, -1);
+                        for (int i = 0; i < _N; i++) {
+                            threads.add(new Thread(new RegisterRequest(_forums.get(i), _publicKey, _serverKey)));
+                            threads.get(i).start();
+                        }
+
+                        for (Thread t : threads) {
+                            t.join();
+                            System.out.println("Thread joined.");
                         }
                         break;
 
@@ -101,23 +103,15 @@ public class Client implements ClientCallbackInterface {
                         wts = _atomicRegister.getWts();
                         _atomicRegister.clearAcklist();
 
-                        for(ForumInterface forum : _forums) {
-                            res = forum.getNonce(_publicKey);
-                            nonce = res.verifyNonce(_serverKey);
+                        for (int i = 0; i < _N; i++) {
+                            threads.add(new Thread(new PostRequest(_forums.get(i), _privateKey, _publicKey, _serverKey,
+                                    message, quotedAnnouncements, wts, _rank,_atomicRegister)));
+                            threads.get(i).start();
+                        }
 
-                            messageBytes = Utils.serializeMessage(_publicKey, message, quotedAnnouncements, nonce, wts, _rank);
-                            signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
-
-                            res = forum.post(_publicKey, message, quotedAnnouncements, wts, _rank, signature);
-
-                            try {
-                                if(res.verify(_serverKey, nonce + 1, wts)) {
-                                    _atomicRegister.setAcklistValue();
-                                }
-                            } catch (IllegalArgumentException e) {
-                                System.out.println("\n" + e.getMessage());
-                                System.out.println("Not acknowledged. Carrying on...");
-                            }
+                        for (Thread t : threads) {
+                            t.join();
+                            System.out.println("Thread joined.");
                         }
 
                         System.out.println("\nVerifying post....");
@@ -142,23 +136,15 @@ public class Client implements ClientCallbackInterface {
                         rid = _atomicRegister.getRid();
                         _atomicRegister.clearAnswers();
 
-                        for (ForumInterface forum : _forums) {
-                            res = forum.getNonce(_publicKey);
-                            nonce = res.verifyNonce(_serverKey);
+                        for (int i = 0; i < _N; i++) {
+                            threads.add(new Thread(new ReadRequest(_forums.get(i), _privateKey, _publicKey, publicKey,
+                                    _serverKey, nAnnouncement, rid, _clientStub, _atomicRegister)));
+                            threads.get(i).start();
+                        }
 
-                            messageBytes = Utils.serializeMessage(_publicKey, publicKey, nAnnouncement, nonce, rid, _clientStub);
-                            signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
-
-                            res = forum.read(_publicKey, publicKey, nAnnouncement, rid, _clientStub, signature);
-
-                            try {
-                                if(res.verify(_serverKey, nonce + 1, rid)) {
-                                    _atomicRegister.setAnswers(res);
-                                }
-                            } catch (IllegalArgumentException e) {
-                                System.out.println("\n" + e.getMessage());
-                                System.out.println("Not acknowledged. Carrying on...");
-                            }
+                        for (Thread t : threads) {
+                            t.join();
+                            System.out.println("Thread joined.");
                         }
 
                         printAnnouncementsAtomic();
@@ -257,23 +243,15 @@ public class Client implements ClientCallbackInterface {
                         _regularRegisterGeneral.clearAcklist();
                         _regularRegisterGeneral.clearReadlist();
 
-                        for (ForumInterface forum : _forums) {
-                            res = forum.getNonce(_publicKey);
-                            nonce = res.verifyNonce(_serverKey);
+                        for (int i = 0; i < _N; i++) {
+                            threads.add(new Thread(new ReadGeneralRequest(_forums.get(i), _privateKey, _publicKey,
+                                    _serverKey, nAnnouncement, rid, _regularRegisterGeneral)));
+                            threads.get(i).start();
+                        }
 
-                            messageBytes = Utils.serializeMessage(_publicKey, nAnnouncement, nonce, rid);
-                            signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
-
-                            res = forum.readGeneral(_publicKey, nAnnouncement, rid, signature);
-
-                            try {
-                                if(res.verify(_serverKey, nonce + 1, rid)) {
-                                    _regularRegisterGeneral.setReadlist(res);
-                                }
-                            } catch (IllegalArgumentException e) {
-                                System.out.println(e.getMessage());
-                                System.out.println("Not acknowledged. Carrying on...");
-                            }
+                        for (Thread t : threads) {
+                            t.join();
+                            System.out.println("Thread joined.");
                         }
 
                         printAnnouncements();
@@ -289,7 +267,9 @@ public class Client implements ClientCallbackInterface {
                 }
             } catch (NumberFormatException e) {
                 System.out.println("ERROR. Must be integer.");
-            } catch (NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException | IllegalArgumentException e) {
+            } catch (InterruptedException e) {
+                System.out.println("Thread interrupted.");
+            } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
         }

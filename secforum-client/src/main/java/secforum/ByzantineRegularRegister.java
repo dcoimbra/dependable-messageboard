@@ -21,13 +21,15 @@ public class ByzantineRegularRegister {
         _acklist.add(1);
     }
 
-    public void clearAcklist() { _acklist.clear(); }
+    public synchronized void clearAcklist() {
+        _acklist.clear();
+    }
 
     public int getRid() {
         return _rid;
     }
 
-    public void setRid() {
+    public synchronized void setRid() {
         _rid++;
     }
 
@@ -35,11 +37,11 @@ public class ByzantineRegularRegister {
         return _readlist;
     }
 
-    public void setReadlist(Response response) {
+    public synchronized void setReadlist(Response response) {
         _readlist.add(response);
     }
 
-    public void clearReadlist() {
+    public synchronized void clearReadlist() {
         _readlist.clear();
     }
 }
