@@ -53,7 +53,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, Serial
             System.exit(0);
         }
 
-        _notClient = new ExceptionResponse(new RemoteException("\nRequest error! User is not registered."), _privKey, -1, -1);
+        _notClient = new ExceptionResponse(new RemoteException("\nRequest error! User is not registered!"), _privKey, -1, -1);
     }
 
 
