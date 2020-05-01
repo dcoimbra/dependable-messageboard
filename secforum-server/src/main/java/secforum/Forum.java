@@ -1,5 +1,6 @@
 package secforum;
 
+import secforum.response.*;
 import security.HashingSHA256;
 import security.SigningSHA256_RSA;
 import security.Utils;

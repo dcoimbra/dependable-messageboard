@@ -1,5 +1,7 @@
 package secforum;
 
+import secforum.response.Response;
+
 import java.rmi.RemoteException;
 import java.security.PublicKey;
 

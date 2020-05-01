@@ -1,5 +1,6 @@
 package secforum;
 
+import secforum.response.Response;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
@@ -7,7 +8,6 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.List;
 
 public class ReadRequest implements Runnable {
 

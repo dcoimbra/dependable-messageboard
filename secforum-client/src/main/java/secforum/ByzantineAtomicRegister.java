@@ -1,6 +1,7 @@
 package secforum;
 
-import java.util.ArrayList;
+import secforum.response.Response;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 

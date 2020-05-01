@@ -1,5 +1,6 @@
-package secforum;
+package secforum.response;
 
+import secforum.Announcement;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
@@ -27,8 +28,6 @@ public abstract class Response implements Serializable {
     public List<Announcement> getAnnouncements() { return null; }
 
     public RemoteException getException() { return null; }
-
-    public abstract int getId() throws IllegalArgumentException;
 
     public abstract boolean verify(PublicKey publicKey, Integer nonce, int requestID) throws IllegalArgumentException;
 

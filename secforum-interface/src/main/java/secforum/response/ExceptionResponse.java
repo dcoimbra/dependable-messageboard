@@ -1,4 +1,4 @@
-package secforum;
+package secforum.response;
 
 import security.SigningSHA256_RSA;
 import security.Utils;
@@ -9,24 +9,17 @@ import java.security.PublicKey;
 
 public class ExceptionResponse extends Response {
     private RemoteException _exception;
-    private int _requestID;
 
     private static final String SECURITY_ERROR = "\nSecurity error! Response was altered!";
 
     public ExceptionResponse(RemoteException exception, PrivateKey privKey, Integer nonce, int requestID) {
         super(nonce, privKey, exception, requestID);
         _exception = exception;
-        _requestID = requestID;
     }
 
     @Override
     public RemoteException getException() {
         return _exception;
-    }
-
-    @Override
-    public int getId() {
-        return _requestID;
     }
 
     @Override

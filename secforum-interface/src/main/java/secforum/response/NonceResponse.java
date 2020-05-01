@@ -1,4 +1,4 @@
-package secforum;
+package secforum.response;
 
 import security.SigningSHA256_RSA;
 import security.Utils;
@@ -13,9 +13,6 @@ public class NonceResponse extends Response {
         super(nonce, privKey);
         _nonce = nonce;
     }
-
-    @Override
-    public int getId() { throw new IllegalArgumentException(); }
 
     @Override
     public boolean verify(PublicKey serverKey, Integer nonce, int requestID) { throw new IllegalArgumentException(); }

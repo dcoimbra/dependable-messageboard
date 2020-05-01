@@ -1,4 +1,4 @@
-package secforum;
+package secforum.response;
 
 import security.SigningSHA256_RSA;
 import security.Utils;
@@ -8,22 +8,15 @@ import java.security.PublicKey;
 
 public class WriteResponse extends Response {
     private String _response;
-    private int _ts;
 
     public WriteResponse(String response, PrivateKey privKey, Integer nonce, int ts) {
         super(nonce, privKey, response, ts);
         _response = response;
-        _ts = ts;
     }
 
     @Override
     public String getResponse() {
         return _response;
-    }
-
-    @Override
-    public int getId() {
-        return _ts;
     }
 
     @Override

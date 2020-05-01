@@ -1,5 +1,6 @@
-package secforum;
+package secforum.response;
 
+import secforum.Announcement;
 import security.SigningSHA256_RSA;
 import security.Utils;
 
@@ -9,23 +10,18 @@ import java.util.List;
 
 public class ReadResponse extends Response {
     private List<Announcement> _announcements;
-    private int _rid;
 
     private static final String SECURITY_ERROR = "\nSecurity error! Response was altered!";
 
     public ReadResponse(List<Announcement> announcements, PrivateKey privKey, Integer nonce, int rid) {
         super(nonce, privKey, announcements, rid);
         _announcements = announcements;
-        _rid = rid;
     }
 
     @Override
     public List<Announcement> getAnnouncements() {
         return _announcements;
     }
-
-    @Override
-    public int getId() { return _rid; }
 
     @Override
     public boolean verify(PublicKey serverKey, Integer nonce, int requestID) {
