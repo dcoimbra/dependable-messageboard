@@ -10,12 +10,12 @@ import java.util.Map;
 
 public class Account implements Serializable {
 
-    private PublicKey _pubKey;
-    private Board _announcementsBoard;
+    private final PublicKey _pubKey;
+    private final Board _announcementsBoard;
     private int _counter;
     private Integer _nonce;
     private int _ts;
-    private Map<ClientCallbackInterface, int[]> _listeners;
+    private final Map<ClientCallbackInterface, int[]> _listeners;
 
     public Account(PublicKey pubKey) {
         _pubKey = pubKey;

@@ -4,7 +4,7 @@ import java.security.*;
 
 public class SigningSHA256_RSA {
 
-    private static String SIGNING_ALGORITHM = "SHA256withRSA";
+    private static final String SIGNING_ALGORITHM = "SHA256withRSA";
 
 
     /**

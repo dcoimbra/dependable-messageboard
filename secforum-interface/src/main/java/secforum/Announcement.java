@@ -14,20 +14,19 @@ import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 public class Announcement implements Serializable {
-    private String _id;
-    private PublicKey _pubKey;
-    private String _message;
-    private List<Announcement> _quotedAnnouncements;
-    private LocalDateTime _timestamp;
-    private Integer _nonce;
-    private int _wts;
-    private int _rank;
-    private byte[] _signature;
+    private final String _id;
+    private final PublicKey _pubKey;
+    private final String _message;
+    private final List<Announcement> _quotedAnnouncements;
+    private final LocalDateTime _timestamp;
+    private final Integer _nonce;
+    private final int _wts;
+    private final int _rank;
+    private final byte[] _signature;
 
     /**
      *

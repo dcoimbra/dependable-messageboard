@@ -8,7 +8,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 public class ExceptionResponse extends Response {
-    private RemoteException _exception;
+    private final RemoteException _exception;
 
     private static final String SECURITY_ERROR = "\nSecurity error! Response was altered!";
 

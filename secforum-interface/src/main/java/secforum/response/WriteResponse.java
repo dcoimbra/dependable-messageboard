@@ -7,7 +7,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 public class WriteResponse extends Response {
-    private String _response;
+    private final String _response;
 
     public WriteResponse(String response, PrivateKey privKey, Integer nonce, int ts) {
         super(nonce, privKey, response, ts);

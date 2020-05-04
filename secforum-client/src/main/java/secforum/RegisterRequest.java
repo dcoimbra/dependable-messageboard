@@ -6,9 +6,9 @@ import java.rmi.RemoteException;
 import java.security.PublicKey;
 
 public class RegisterRequest  implements Runnable {
-    private PublicKey _publicKey;
-    private ForumInterface _forum;
-    private PublicKey _serverKey;
+    private final PublicKey _publicKey;
+    private final ForumInterface _forum;
+    private final PublicKey _serverKey;
 
     public RegisterRequest(ForumInterface forum, PublicKey publicKey, PublicKey serverKey) {
         _forum = forum;

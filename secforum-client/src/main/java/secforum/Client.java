@@ -70,7 +70,6 @@ public class Client implements ClientCallbackInterface {
                 command = Integer.parseInt(_keyboardSc.nextLine());
                 List<Thread> threads = new ArrayList<>();
                 List<String> quotedAnnouncements;
-                Response res;
                 int wts;
                 int rid;
 

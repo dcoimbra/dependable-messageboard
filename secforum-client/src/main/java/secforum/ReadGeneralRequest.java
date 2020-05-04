@@ -10,12 +10,12 @@ import java.security.PublicKey;
 
 public class ReadGeneralRequest implements Runnable {
 
-    private PublicKey _serverKey;
-    private PublicKey _publicKey;
-    private PrivateKey _privateKey;
-    private ForumInterface _forum;
-    private int _nAnnouncement;
-    private Integer _rid;
+    private final PublicKey _serverKey;
+    private final PublicKey _publicKey;
+    private final PrivateKey _privateKey;
+    private final ForumInterface _forum;
+    private final int _nAnnouncement;
+    private final Integer _rid;
     private final ByzantineRegularRegister _regularRegisterGeneral;
 
     public ReadGeneralRequest(ForumInterface forum, PrivateKey privateKey, PublicKey publicKey, PublicKey serverKey,

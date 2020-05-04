@@ -13,8 +13,8 @@ import java.util.List;
 public class ForumServer {
 
     private static Forum _forum;
-    private static String _filename = "src/main/resources/forum.ser";
-    private static String _backup = "src/main/resources/forum_backup.ser";
+    private static final String _filename = "src/main/resources/forum.ser";
+    private static final String _backup = "src/main/resources/forum_backup.ser";
 
     public static Forum getForum() {
         return _forum;
@@ -74,7 +74,7 @@ public class ForumServer {
 
         System.out.println("Looking for other servers...");
 
-        boolean foundServer = false;
+        boolean foundServer;
 
         for (int i = 0; i < 4; i++) {
             foundServer = false;

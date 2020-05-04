@@ -7,7 +7,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 public class NonceResponse extends Response {
-    private Integer _nonce;
+    private final Integer _nonce;
 
     public NonceResponse(PrivateKey privKey, Integer nonce) {
         super(nonce, privKey);

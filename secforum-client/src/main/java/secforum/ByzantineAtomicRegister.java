@@ -7,9 +7,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ByzantineAtomicRegister {
     private int _wts;
-    private List<Integer> _acklist;
+    private final List<Integer> _acklist;
     private int _rid;
-    private List<Response> _answers;
+    private final List<Response> _answers;
 
     public ByzantineAtomicRegister() {
         _wts = 0;

@@ -5,9 +5,9 @@ import secforum.response.Response;
 import java.util.ArrayList;
 
 public class ByzantineRegularRegister {
-    private ArrayList<Integer> _acklist;
+    private final ArrayList<Integer> _acklist;
     private int _rid;
-    private ArrayList<Response> _readlist;
+    private final ArrayList<Response> _readlist;
 
     public ByzantineRegularRegister() {
         _acklist = new ArrayList<>();

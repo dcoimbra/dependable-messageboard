@@ -11,15 +11,15 @@ import java.util.List;
 
 public class PostGeneralRequest implements Runnable {
 
-    private PublicKey _serverKey;
-    private PublicKey _publicKey;
-    private PrivateKey _privateKey;
-    private ForumInterface _forum;
-    private String _message;
-    private List<String> _quotedAnnouncements;
-    private Integer _wts;
-    private int _rank;
-    private int _rid;
+    private final PublicKey _serverKey;
+    private final PublicKey _publicKey;
+    private final PrivateKey _privateKey;
+    private final ForumInterface _forum;
+    private final String _message;
+    private final List<String> _quotedAnnouncements;
+    private final Integer _wts;
+    private final int _rank;
+    private final int _rid;
     private final ByzantineRegularRegister _regularRegisterGeneral;
 
     public PostGeneralRequest(ForumInterface forum, PrivateKey privateKey, PublicKey publicKey, PublicKey serverKey,
