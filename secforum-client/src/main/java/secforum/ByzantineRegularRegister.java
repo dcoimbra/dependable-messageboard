@@ -2,20 +2,21 @@ package secforum;
 
 import secforum.response.Response;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 public class ByzantineRegularRegister {
-    private final ArrayList<Integer> _acklist;
+    private final List<Integer> _acklist;
     private int _rid;
-    private final ArrayList<Response> _readlist;
+    private final List<Response> _readlist;
 
     public ByzantineRegularRegister() {
-        _acklist = new ArrayList<>();
+        _acklist = new Vector<>();
         _rid = 0;
-        _readlist = new ArrayList<>();
+        _readlist = new Vector<>();
     }
 
-    public ArrayList<Integer> getAcklist() {
+    public List<Integer> getAcklist() {
         return _acklist;
     }
 
@@ -35,7 +36,7 @@ public class ByzantineRegularRegister {
         _rid++;
     }
 
-    public ArrayList<Response> getReadlist() {
+    public List<Response> getReadlist() {
         return _readlist;
     }
 
