@@ -50,6 +50,6 @@ public class HashingSHA256 {
      * @return True if the digests are equal, false otherwise.
      */
     public static boolean equals(String digest1, String digest2) {
-        return MessageDigest.isEqual(Base64.getDecoder().decode(digest1), Base64.getDecoder().decode(digest2)   );
+        return MessageDigest.isEqual(Base64.getDecoder().decode(digest1), Base64.getDecoder().decode(digest2));
     }
 }

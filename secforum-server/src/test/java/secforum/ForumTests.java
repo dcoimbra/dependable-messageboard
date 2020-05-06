@@ -78,7 +78,7 @@ public class ForumTests {
 //            _message = "ola";
 //            _quotedAnnouncements = new ArrayList<>();
 //            _wrongQuotedAnnouncements = new ArrayList<>();
-//            _wrongQuotedAnnouncements.add("a");
+//            _wrongQuotedAnnouncements.add("aahrevbbver");
 //            _read = 1;
 //            _negative = -1;
 //            _high = 2;
