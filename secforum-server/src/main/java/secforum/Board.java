@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Board implements Serializable {
-    private List<Announcement> _announcements;
+    private final List<Announcement> _announcements;
 
     public Board() {
         _announcements = new ArrayList<>();

@@ -14,7 +14,7 @@ public class SigningSHA256_RSATests {
     private static PublicKey pubKey2;
     private static PrivateKey privKey1;
     private static PrivateKey privKey2;
-    private static byte[] txt = ("I want to encrypt something really important!!!").getBytes();
+    private static final byte[] txt = ("I want to encrypt something really important!!!").getBytes();
 
     @BeforeAll
     static void setup() {

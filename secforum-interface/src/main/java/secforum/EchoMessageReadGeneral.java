@@ -1,17 +1,19 @@
 package secforum;
 
+import security.Utils;
+
+import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Arrays;
-import java.util.Objects;
 
 public class EchoMessageReadGeneral extends EchoMessage {
-    private int _number;
-    private int _rid;
+    private final int _number;
+    private final int _rid;
 
-    public EchoMessageReadGeneral(PublicKey pubKey, int number, int rid) {
+    public EchoMessageReadGeneral(PublicKey pubKey, int number, int rid, PrivateKey _privKey) {
         super("readGeneral", pubKey);
         _number = number;
         _rid = rid;
+        sign(_privKey);
     }
 
     @Override
@@ -22,5 +24,10 @@ public class EchoMessageReadGeneral extends EchoMessage {
         EchoMessageReadGeneral that = (EchoMessageReadGeneral) o;
         return _number == that._number &&
                 _rid == that._rid;
+    }
+
+    @Override
+    public byte[] serialize() {
+        return Utils.serializeMessage(getOp(), getPubKey(), _number, _rid);
     }
 }

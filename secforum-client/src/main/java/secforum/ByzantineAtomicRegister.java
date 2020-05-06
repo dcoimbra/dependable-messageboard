@@ -3,19 +3,19 @@ package secforum;
 import secforum.response.Response;
 
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Vector;
 
 public class ByzantineAtomicRegister {
     private int _wts;
-    private List<Integer> _acklist;
+    private final List<Integer> _acklist;
     private int _rid;
-    private List<Response> _answers;
+    private final List<Response> _answers;
 
     public ByzantineAtomicRegister() {
         _wts = 0;
-        _acklist = new CopyOnWriteArrayList<>();
+        _acklist = new Vector<>();
         _rid = 0;
-        _answers = new CopyOnWriteArrayList<>();
+        _answers = new Vector<>();
     }
 
     public int getWts() {

@@ -13,9 +13,9 @@ import java.util.List;
 public class ForumServer {
 
     private static Forum _forum;
-    private static String _filename = "src/main/resources/forum";
-    private static String _backup = "src/main/resources/forum_backup";
-    private static String _extention = ".ser";
+    private static final String _filename = "src/main/resources/forum";
+    private static final String _backup = "src/main/resources/forum_backup";
+    private static final String _extention = ".ser";
     private static int _id;
 
     public static Forum getForum() {
@@ -73,7 +73,7 @@ public class ForumServer {
     public static List<ForumReliableBroadcastInterface> searchForums(int id) {
         List<ForumReliableBroadcastInterface> otherServers = new ArrayList<>();
         System.out.println("Looking for other servers...");
-        boolean foundServer = false;
+        boolean foundServer;
 
         for (int i = 0; i < 4; i++) {
             foundServer = false;

@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class HashingSHA256Tests {
 
-    private static String txt = "I want to digest a big message to prove that I can hash every message out there";
+    private static final String txt = "I want to digest a big message to prove that I can hash every message out there";
 
 
     @Test

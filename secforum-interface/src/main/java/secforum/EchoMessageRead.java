@@ -1,25 +1,26 @@
 package secforum;
 
+import security.Utils;
+
 import java.rmi.Remote;
+import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Arrays;
-import java.util.Objects;
 
 public class EchoMessageRead extends EchoMessage {
 
-    private PublicKey _targetKey;
-    private int _rid;
-    private int _number;
-    private Remote _clientStub;
-    private byte[] _signature;
+    private final PublicKey _targetKey;
+    private final int _rid;
+    private final int _number;
+    private final Remote _clientStub;
 
-    public EchoMessageRead(PublicKey pubKey, PublicKey targetKey, int number, int rid, Remote clientStub, byte[] signature) {
+    public EchoMessageRead(PublicKey pubKey, PublicKey targetKey, int number, int rid, Remote clientStub,
+                           PrivateKey _privKey) {
         super("read", pubKey);
         _targetKey = targetKey;
         _number = number;
         _rid = rid;
         _clientStub = clientStub;
-        _signature = signature;
+        sign(_privKey);
     }
 
     @Override
@@ -31,7 +32,11 @@ public class EchoMessageRead extends EchoMessage {
         return _rid == that._rid &&
                 _number == that._number &&
                 _targetKey.equals(that._targetKey) &&
-                _clientStub.equals(that._clientStub) &&
-                Arrays.equals(_signature, that._signature);
+                _clientStub.equals(that._clientStub);
+    }
+
+    @Override
+    public byte[] serialize() {
+        return Utils.serializeMessage(getOp(), getPubKey(), _targetKey, _number, _rid, _clientStub);
     }
 }

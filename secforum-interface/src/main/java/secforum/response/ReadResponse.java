@@ -9,7 +9,7 @@ import java.security.PublicKey;
 import java.util.List;
 
 public class ReadResponse extends Response {
-    private List<Announcement> _announcements;
+    private final List<Announcement> _announcements;
 
     private static final String SECURITY_ERROR = "\nSecurity error! Response was altered!";
 

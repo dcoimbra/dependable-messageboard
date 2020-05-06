@@ -14,10 +14,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 public class Forum extends UnicastRemoteObject implements ForumInterface, ForumReliableBroadcastInterface, Serializable {
 
@@ -29,6 +27,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     private final ExceptionResponse _notClient;
     private int _ts;
     private List<ForumReliableBroadcastInterface> _otherServers;
+
+    private transient CountDownLatch _echoLatch = new CountDownLatch(3);
+    private transient CountDownLatch _readyLatch = new CountDownLatch(3);
+
     private final List<EchoMessage> _echos;
     private final List<EchoMessage> _readys;
     private boolean _delivered;
@@ -45,8 +47,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      */
     public Forum(String password) throws RemoteException {
         _delivered = false;
-        _echos = new ArrayList<>();
-        _readys = new ArrayList<>();
+        _echos = new Vector<>();
+        _readys = new Vector<>();
 
         _accounts = new HashMap<>();
         _generalBoard = new Board();
@@ -85,14 +87,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @return Response positive if successfully registered
      */
     public synchronized Response register(PublicKey pubKey) {
-        EchoMessage echoMessage = new EchoMessageRegister(pubKey);
+        EchoMessage echoMessage = new EchoMessageRegister(pubKey, _privKey);
 
         Response res;
 
         try {
             byzantineReliableBroadcast(echoMessage);
         } catch (InterruptedException | RemoteException e) {
-           res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, 0, -1);
+            _delivered = false;
         }
 
         if (_delivered) {
@@ -126,7 +128,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @param signature signature of the sender
      */
     public Response post(PublicKey pubKey, String message, List<String> a, int wts, int rank, byte[] signature) {
-        EchoMessage echoMessage = new EchoMessagePost(pubKey, message, a, wts);
+        EchoMessage echoMessage = new EchoMessagePost(pubKey, message, a, wts, _privKey);
         
       Account account = _accounts.get(pubKey);
         if (account == null) {
@@ -135,14 +137,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         Response res;
 
-        try {
-            byzantineReliableBroadcast(echoMessage);
-        } catch (InterruptedException | RemoteException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), wts);
-        }
+        boolean delivered = account.byzantineReliableBroadcast(echoMessage, _otherServers);
 
-        if (_delivered) {
-            _delivered = false;
+        if (delivered) {
             try {
                 byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), wts, rank);
                 if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
@@ -195,19 +192,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         if(account == null) {
             return _notClient;
         }
-      
-        EchoMessage echoMessage = new EchoMessagePostGeneral(pubKey, message, a, rid, ts, rank);
+
+        EchoMessage echoMessage = new EchoMessagePostGeneral(pubKey, message, a, rid, ts, rank, _privKey);
 
         Response res;
 
-        try {
-            byzantineReliableBroadcast(echoMessage);
-        } catch (InterruptedException | RemoteException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), rid);
-        }
+        boolean delivered = account.byzantineReliableBroadcast(echoMessage, _otherServers);
 
-        if (_delivered) {
-            _delivered = false;
+        if (delivered) {
             if (ts > _ts || (ts == _ts && rank > _rank)) {
                 _ts = ts;
                 _rank = rank;
@@ -260,18 +252,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return _notClient;
         }
 
-        EchoMessage echoMessage = new EchoMessageRead(senderPubKey, pubKey, number, rid, clientStub, signature);
+        EchoMessage echoMessage = new EchoMessageRead(senderPubKey, pubKey, number, rid, clientStub, _privKey);
 
         Response res;
-        try {
-            byzantineReliableBroadcast(echoMessage);
-        } catch (InterruptedException | RemoteException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
-        }
+        boolean delivered = senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
 
-        if (_delivered) {
-            _delivered = false;
-
+        if (delivered) {
             Account targetAccount = _accounts.get(pubKey);
             if(targetAccount == null) {
                 senderAccount.setNonce();
@@ -329,19 +315,13 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return _notClient;
         }
 
-        EchoMessage echoMessage = new EchoMessageReadGeneral(senderPubKey, number, rid);
+        EchoMessage echoMessage = new EchoMessageReadGeneral(senderPubKey, number, rid, _privKey);
 
         Response res;
 
-        try {
-            byzantineReliableBroadcast(echoMessage);
-        } catch (InterruptedException | RemoteException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
-        }
+        boolean delivered = senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
 
-        if(_delivered) {
-             _delivered = false;
-
+        if(delivered) {
             if(number < 0) {
                 senderAccount.setNonce();
                 res = new ExceptionResponse(new RemoteException(NEGATIVE_ERROR), _privKey, senderAccount.getNonce(), rid);
@@ -382,40 +362,35 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         return res;
     }
 
-    public Response readComplete(PublicKey pubKey, Remote clientStub, int rid, byte[] signature) {
+    public ExceptionResponse readComplete(PublicKey pubKey, Remote clientStub, int rid, byte[] signature) {
         Account senderAccount = _accounts.get(pubKey);
         if(senderAccount == null) {
-            return _notClient;
+            return null;
         }
-
-        Response res;
 
         byte[] messageBytes;
         try {
             messageBytes = Utils.serializeMessage(pubKey, clientStub, _accounts.get(pubKey).getNonce(), rid);
         } catch (IllegalArgumentException e) {
             senderAccount.setNonce();
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
 
             senderAccount.setNonce();
-            return res;
+            return null;
         }
 
         try {
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 senderAccount.setNonce();
-                res = new ExceptionResponse(new RemoteException(SECURITY_ERROR), _privKey, senderAccount.getNonce(), rid);
             } else {
                 senderAccount.removeListener((ClientCallbackInterface) clientStub);
-                res = new WriteResponse("Removed from listeners.", _privKey, senderAccount.getNonce(), _ts);
                 ForumServer.writeForum(this);
             }
         } catch (IOException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
+            return new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
         }
 
         senderAccount.setNonce();
-        return res;
+        return null;
     }
 
     protected PublicKey loadPublicKey() {
@@ -426,12 +401,11 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             Certificate cert = keystore.getCertificate("server");
             return cert.getPublicKey();
         } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
-            e.printStackTrace();
+            return null;
         }
-        return null;
     }
 
-    public boolean verifyRegistered(PublicKey pubKey) {
+    private boolean verifyRegistered(PublicKey pubKey) {
         return !_accounts.containsKey(pubKey);
     }
 
@@ -470,7 +444,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
 
-    private EchoMessage compareMessages(List<EchoMessage> messages) {
+    public static EchoMessage compareMessages(List<EchoMessage> messages) {
 
         System.out.println("Comparing messages...");
         EchoMessage message;
@@ -485,7 +459,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
                     if (other.equals(message)) {
                         quorumCounter++;
 
-                        if (quorumCounter > (_N * _f) / 2) {
+                        if (quorumCounter > (_N + _f) / 2) {
                             System.out.println("Got a quorum.");
                             return message;
                         }
@@ -496,9 +470,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         return null;
     }
+    
+    private void byzantineReliableBroadcast(EchoMessage message) throws InterruptedException, RemoteException {
 
-
-    public void byzantineReliableBroadcast(EchoMessage message) throws InterruptedException, RemoteException {
         List<Thread> threads = new ArrayList<>();
 
         System.out.println("Echo.");
@@ -513,9 +487,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         }
 
         System.out.println("Waiting for echo quorum...");
-        while ((_echos.size() <= (_N + _f) / 2)) {
-            System.out.println(_echos.size());
-        }
+        _echoLatch.await();
 
         EchoMessage echoMessage = compareMessages(_echos);
 
@@ -539,9 +511,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         }
 
         System.out.println("Waiting for ready quorum...");
-        while ((_readys.size() <= 2 * _f)) {
-            System.out.println(_readys.size());
-        }
+        _readyLatch.await();
 
         EchoMessage readyMessage = compareMessages(_readys);
 
@@ -553,19 +523,42 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         System.out.println("Ready quorum. Delivering message.");
         _delivered = true;
         _echos.clear();
+        _echoLatch = new CountDownLatch(3);
         _readys.clear();
+        _readyLatch = new CountDownLatch(3);
     }
-
 
     @Override
     public void echo(EchoMessage message) {
+
+        if (!message.getOp().equals("register")) {
+            Account senderAccount = _accounts.get(message.getPubKey());
+            senderAccount.echo(message, loadPublicKey());
+            return;
+        }
+
         System.out.println("Got an echo.");
-        _echos.add(message);
+        if (message.verify(loadPublicKey(), message.serialize())) {
+            Account.addEcho(message, _echos, _echoLatch);
+        } else {
+            System.out.println("(echo) Not verified");
+        }
     }
 
     @Override
     public void ready(EchoMessage message) {
+
+        if (!message.getOp().equals("register")) {
+            Account senderAccount = _accounts.get(message.getPubKey());
+            senderAccount.ready(message, loadPublicKey());
+            return;
+        }
+
         System.out.println("Someone is ready.");
-        _readys.add(message);
+        if (message.verify(loadPublicKey(), message.serialize())) {
+            Account.addReady(message, _readys, _readyLatch);
+        } else {
+            System.out.println("(ready) Not verified");
+        }
     }
 }

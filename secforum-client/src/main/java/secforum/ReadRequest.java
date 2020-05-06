@@ -11,14 +11,14 @@ import java.security.PublicKey;
 
 public class ReadRequest implements Runnable {
 
-    private PublicKey _serverKey;
-    private PublicKey _publicKey;
-    private PublicKey _targetKey;
-    private PrivateKey _privateKey;
-    private ForumInterface _forum;
-    private int _nAnnouncement;
-    private Integer _rid;
-    private Remote _clientStub;
+    private final PublicKey _serverKey;
+    private final PublicKey _publicKey;
+    private final PublicKey _targetKey;
+    private final PrivateKey _privateKey;
+    private final ForumInterface _forum;
+    private final int _nAnnouncement;
+    private final Integer _rid;
+    private final Remote _clientStub;
     private final ByzantineAtomicRegister _atomicRegister;
 
     public ReadRequest(ForumInterface forum, PrivateKey privateKey, PublicKey publicKey, PublicKey targetKey,
