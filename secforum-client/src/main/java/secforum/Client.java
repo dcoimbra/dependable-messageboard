@@ -70,8 +70,6 @@ public class Client implements ClientCallbackInterface {
                 command = Integer.parseInt(_keyboardSc.nextLine());
                 List<Thread> threads = new ArrayList<>();
                 List<String> quotedAnnouncements;
-                int wts;
-                int rid;
 
                 switch (command) {
                     case 1: // register
@@ -91,7 +89,6 @@ public class Client implements ClientCallbackInterface {
                         message = _keyboardSc.nextLine();
 
                         quotedAnnouncements = new ArrayList<>();
-
                         nAnnouncement = requestInt("\nEnter the number of announcements to be quoted:");
 
                         for (int i = 0; i < nAnnouncement; i++) {
@@ -99,29 +96,7 @@ public class Client implements ClientCallbackInterface {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        _atomicRegister.setWts();
-                        wts = _atomicRegister.getWts();
-                        _atomicRegister.clearAcklist();
-
-                        for (int i = 0; i < _N; i++) {
-                            threads.add(new Thread(new PostRequest(_forums.get(i), _privateKey, _publicKey, _serverKey,
-                                    message, quotedAnnouncements, wts, _rank, _atomicRegister)));
-                            threads.get(i).start();
-                        }
-
-                        for (Thread t : threads) {
-                            t.join();
-                            System.out.println("Thread joined.");
-                        }
-
-                        System.out.println("\nVerifying post....");
-
-                        if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
-                            System.out.println("\nPost verified.");
-                        } else {
-                            throw new IllegalArgumentException(BYZANTINE_ERROR);
-                        }
-
+                        post(threads, message, quotedAnnouncements);
                         break;
 
                     case 3: // read
@@ -129,25 +104,9 @@ public class Client implements ClientCallbackInterface {
                         id = _keyboardSc.nextLine();
 
                         publicKey = Utils.loadPublicKey(id);
-
                         nAnnouncement = requestInt("\nEnter the number of announcements to read:");
 
-                        _atomicRegister.setRid();
-                        rid = _atomicRegister.getRid();
-                        _atomicRegister.clearAnswers();
-
-                        for (int i = 0; i < _N; i++) {
-                            threads.add(new Thread(new ReadRequest(_forums.get(i), _privateKey, _publicKey, publicKey,
-                                    _serverKey, nAnnouncement, rid, _clientStub, _atomicRegister)));
-                            threads.get(i).start();
-                        }
-
-                        for (Thread t : threads) {
-                            t.join();
-                            System.out.println("Thread joined.");
-                        }
-
-                        printAnnouncementsAtomic();
+                        read(threads, publicKey, nAnnouncement);
                         break;
 
                     case 4: // postGeneral
@@ -162,87 +121,13 @@ public class Client implements ClientCallbackInterface {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        System.out.println("\nStarting read phase...");
-
-                        _regularRegisterGeneral.setRid();
-                        rid = _regularRegisterGeneral.getRid();
-                        _regularRegisterGeneral.clearAcklist();
-                        _regularRegisterGeneral.clearReadlist();
-
-                        // Before write, must read value to get most recent ts
-
-                        for (int i = 0; i < _N; i++) {
-                            threads.add(new Thread(new ReadGeneralRequest(_forums.get(i), _privateKey, _publicKey,
-                                    _serverKey, 1, rid, _regularRegisterGeneral)));
-                            threads.get(i).start();
-                        }
-
-                        for (Thread t : threads) {
-                            t.join();
-                            System.out.println("Thread joined.");
-                        }
-
-                        System.out.println("\nRead phase has ended!");
-
-                        int maxTs;
-
-                        try {
-                            maxTs = highestRes().getAnnouncements().get(0).getTs() + 1;
-                        } catch (IllegalArgumentException iae) {
-                            if(_regularRegisterGeneral.getReadlist().size() < 2) {
-                                maxTs = 0;
-                            } else {
-                                throw iae;
-                            }
-                        }
-
-                        threads = new ArrayList<>();
-
-                        System.out.println("\nStarting write phase...");
-
-                        for (int i = 0; i < _N; i++) {
-                            threads.add(new Thread(new PostGeneralRequest(_forums.get(i), _privateKey, _publicKey,
-                                    _serverKey, message, quotedAnnouncements, maxTs, _rank, rid, _regularRegisterGeneral)));
-                            threads.get(i).start();
-                        }
-
-                        for (Thread t : threads) {
-                            t.join();
-                            System.out.println("Thread joined.");
-                        }
-
-                        System.out.println("\nWrite phase has ended!");
-
-                        System.out.println("\nVerifying post....");
-                        if (_regularRegisterGeneral.getAcklist().size() > (_N + _f) / 2) {
-                            _regularRegisterGeneral.clearAcklist();
-                            System.out.println("\nPost verified!");
-                        } else {
-                            throw new IllegalArgumentException(BYZANTINE_ERROR);
-                        }
-
+                        postGeneral(threads, message, quotedAnnouncements);
                         break;
 
                     case 5: // readGeneral
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
-                        _regularRegisterGeneral.setRid();
-                        rid = _regularRegisterGeneral.getRid();
-                        _regularRegisterGeneral.clearAcklist();
-                        _regularRegisterGeneral.clearReadlist();
-
-                        for (int i = 0; i < _N; i++) {
-                            threads.add(new Thread(new ReadGeneralRequest(_forums.get(i), _privateKey, _publicKey,
-                                    _serverKey, nAnnouncement, rid, _regularRegisterGeneral)));
-                            threads.get(i).start();
-                        }
-
-                        for (Thread t : threads) {
-                            t.join();
-                            System.out.println("Thread joined.");
-                        }
-
-                        printAnnouncements();
+                        readGeneral(threads, nAnnouncement);
                         break;
 
                     case 6: // exit
@@ -261,6 +146,120 @@ public class Client implements ClientCallbackInterface {
                 System.out.println(e.getMessage());
             }
         }
+    }
+
+    private void post(List<Thread> threads, String message, List<String> quotedAnnouncements) throws InterruptedException {
+        _atomicRegister.setWts();
+        int wts = _atomicRegister.getWts();
+        _atomicRegister.clearAcklist();
+
+        for (int i = 0; i < _N; i++) {
+            threads.add(new Thread(new PostRequest(_forums.get(i), _privateKey, _publicKey, _serverKey,
+                    message, quotedAnnouncements, wts, _rank, _atomicRegister)));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+            System.out.println("Thread joined.");
+        }
+
+        System.out.println("\nVerifying post....");
+
+        if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
+            System.out.println("\nPost verified.");
+        } else {
+            throw new IllegalArgumentException(BYZANTINE_ERROR);
+        }
+    }
+
+    private void read(List<Thread> threads, PublicKey publicKey, int nAnnouncement) throws InterruptedException {
+        _atomicRegister.setRid();
+        int rid = _atomicRegister.getRid();
+        _atomicRegister.clearAnswers();
+
+        for (int i = 0; i < _N; i++) {
+            threads.add(new Thread(new ReadRequest(_forums.get(i), _privateKey, _publicKey, publicKey,
+                    _serverKey, nAnnouncement, rid, _clientStub, _atomicRegister)));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+            System.out.println("Thread joined.");
+        }
+
+        printAnnouncementsAtomic();
+    }
+
+    private void postGeneral(List<Thread> threads, String message, List<String> quotedAnnouncements) throws InterruptedException {
+        _regularRegisterGeneral.setRid();
+        int rid = _regularRegisterGeneral.getRid();
+        _regularRegisterGeneral.clearAcklist();
+        _regularRegisterGeneral.clearReadlist();
+
+        // Before write, must read value to get most recent ts
+        for (int i = 0; i < _N; i++) {
+            threads.add(new Thread(new ReadGeneralRequest(_forums.get(i), _privateKey, _publicKey,
+                    _serverKey, 1, rid, _regularRegisterGeneral)));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+            System.out.println("Thread joined.");
+        }
+
+        int maxTs;
+        try {
+            maxTs = highestRes().getAnnouncements().get(0).getTs() + 1;
+        } catch (IllegalArgumentException iae) {
+            if(_regularRegisterGeneral.getReadlist().size() < 2) {
+                maxTs = 0;
+            } else {
+                throw iae;
+            }
+        }
+
+        threads = new ArrayList<>();
+        for (int i = 0; i < _N; i++) {
+            threads.add(new Thread(new PostGeneralRequest(_forums.get(i), _privateKey, _publicKey,
+                    _serverKey, message, quotedAnnouncements, maxTs, _rank, rid, _regularRegisterGeneral)));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+            System.out.println("Thread joined.");
+        }
+
+        System.out.println("\nVerifying post....");
+        if (_regularRegisterGeneral.getAcklist().size() > (_N + _f) / 2) {
+            _regularRegisterGeneral.clearAcklist();
+            System.out.println("\nPost verified!");
+        } else {
+            throw new IllegalArgumentException(BYZANTINE_ERROR);
+        }
+    }
+
+    private void readGeneral(List<Thread> threads, int nAnnouncement) throws InterruptedException {
+        _regularRegisterGeneral.setRid();
+        int rid = _regularRegisterGeneral.getRid();
+        _regularRegisterGeneral.clearAcklist();
+        _regularRegisterGeneral.clearReadlist();
+
+        for (int i = 0; i < _N; i++) {
+            threads.add(new Thread(new ReadGeneralRequest(_forums.get(i), _privateKey, _publicKey,
+                    _serverKey, nAnnouncement, rid, _regularRegisterGeneral)));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+            System.out.println("Thread joined.");
+        }
+
+        printAnnouncements();
     }
 
     @Override

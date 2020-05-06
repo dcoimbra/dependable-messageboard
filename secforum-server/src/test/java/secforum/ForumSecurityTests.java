@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ForumSecurityTest {
+public class ForumSecurityTests {
     private static PublicKey _pubKey1;
     private static PrivateKey _privKey1;
     private static PublicKey _pubKey2;
@@ -300,9 +300,11 @@ public class ForumSecurityTest {
         _quotedAnnouncements = null;
         _signaturePost = null;
 
-        File forum = new File("src/main/resources/forum.ser");
-        File backup = new File("src/main/resources/forum_backup.ser");
-        forum.delete();
-        backup.delete();
+        for(int i = 0; i < 4; i++) {
+            File forum = new File("src/main/resources/forum" + i + ".ser");
+            File backup = new File("src/main/resources/forum_backup" + i + ".ser");
+            forum.delete();
+            backup.delete();
+        }
     }
 }

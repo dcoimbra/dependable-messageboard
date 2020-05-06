@@ -14,7 +14,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AnnouncementTest {
+public class AnnouncementTests {
 
     private Announcement _announcement;
     private PublicKey _publicKey;

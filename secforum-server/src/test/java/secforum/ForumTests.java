@@ -1,48 +1,48 @@
-//package secforum;
-//
-//import org.junit.jupiter.api.AfterEach;
-//import org.junit.jupiter.api.BeforeAll;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import security.SigningSHA256_RSA;
-//import security.Utils;
-//
-//import java.io.File;
-//import java.io.IOException;
-//import java.rmi.RemoteException;
-//import java.security.*;
-//import java.util.ArrayList;
-//import java.util.List;
-//
-//import static org.junit.jupiter.api.Assertions.*;
-//
-//public class ForumTest {
-//    private Forum _forum;
-//    private static PublicKey _pubKey1;
-//    private static PublicKey _pubKey2;
-//    private static PrivateKey _privKey1;
-//    private static PrivateKey _privKey2;
-//
-//    private String _message;
-//    private List<String> _quotedAnnouncements;
-//    private List<String> _wrongQuotedAnnouncements;
-//    private int _read;
-//    private int _negative;
-//    private int _high;
-//    private int _nonce;
-//    private int _counter;
-//
-//    private byte[] _signaturePost;
-//    private byte[] _signatureRead;
-//    private byte[] _signatureReadGeneral;
-//
-//
-//    private byte[] _signaturePostInvalid;
-//    private byte[] _signatureReadTooHigh;
-//    private byte[] _signatureReadNegative;
-//    private byte[] _signatureReadGeneralTooHigh;
-//    private byte[] _signatureReadGeneralNegative;
-//
+package secforum;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import security.SigningSHA256_RSA;
+import security.Utils;
+
+import java.io.File;
+import java.io.IOException;
+import java.rmi.RemoteException;
+import java.security.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ForumTests {
+    private Forum _forum;
+    private static PublicKey _pubKey1;
+    private static PublicKey _pubKey2;
+    private static PrivateKey _privKey1;
+    private static PrivateKey _privKey2;
+
+    private String _message;
+    private List<String> _quotedAnnouncements;
+    private List<String> _wrongQuotedAnnouncements;
+    private int _read;
+    private int _negative;
+    private int _high;
+    private int _nonce;
+    private int _counter;
+
+    private byte[] _signaturePost;
+    private byte[] _signatureRead;
+    private byte[] _signatureReadGeneral;
+
+
+    private byte[] _signaturePostInvalid;
+    private byte[] _signatureReadTooHigh;
+    private byte[] _signatureReadNegative;
+    private byte[] _signatureReadGeneralTooHigh;
+    private byte[] _signatureReadGeneralNegative;
+
 //    @BeforeAll
 //    public static void generate() {
 //       try {
@@ -255,9 +255,11 @@
 //        _quotedAnnouncements = null;
 //        _signaturePost = null;
 //
-//        File forum = new File("src/main/resources/forum.ser");
-//        File backup = new File("src/main/resources/forum_backup.ser");
+//        for(int i = 0; i < 4; i++) {
+//        File forum = new File("src/main/resources/forum" + i + ".ser");
+//        File backup = new File("src/main/resources/forum_backup" + i + ".ser");
 //        forum.delete();
 //        backup.delete();
+//        }
 //    }
-//}
+}
