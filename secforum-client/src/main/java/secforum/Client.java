@@ -28,10 +28,11 @@ public class Client implements ClientCallbackInterface {
     private ByzantineAtomicRegister _atomicRegister;
     private ByzantineRegularRegister _regularRegisterGeneral;
     private static int _rank;
+
     private static final String BYZANTINE_ERROR = "\nERROR: Byzantine fault detected.";
+    private static final String WRITE_RESPONSE = "Post verified!";
 
     public Client(String id) {
-
         try {
             _clientStub = UnicastRemoteObject.exportObject(this, 8887 + Integer.parseInt(id));
             _keyboardSc = new Scanner(System.in);
@@ -70,18 +71,11 @@ public class Client implements ClientCallbackInterface {
                 command = Integer.parseInt(_keyboardSc.nextLine());
                 List<Thread> threads = new ArrayList<>();
                 List<String> quotedAnnouncements;
+                String response;
 
                 switch (command) {
                     case 1: // register
-                        for (int i = 0; i < _N; i++) {
-                            threads.add(new Thread(new RegisterRequest(_forums.get(i), _publicKey, _serverKey)));
-                            threads.get(i).start();
-                        }
-
-                        for (Thread t : threads) {
-                            t.join();
-                            System.out.println("Thread joined.");
-                        }
+                        register(threads);
                         break;
 
                     case 2: // post
@@ -96,7 +90,8 @@ public class Client implements ClientCallbackInterface {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        post(threads, message, quotedAnnouncements);
+                        response = post(threads, message, quotedAnnouncements);
+                        System.out.println(response);
                         break;
 
                     case 3: // read
@@ -106,7 +101,8 @@ public class Client implements ClientCallbackInterface {
                         publicKey = Utils.loadPublicKey(id);
                         nAnnouncement = requestInt("\nEnter the number of announcements to read:");
 
-                        read(threads, publicKey, nAnnouncement);
+                        response = read(threads, publicKey, nAnnouncement);
+                        System.out.println(response);
                         break;
 
                     case 4: // postGeneral
@@ -121,13 +117,15 @@ public class Client implements ClientCallbackInterface {
                             quotedAnnouncements.add(_keyboardSc.nextLine());
                         }
 
-                        postGeneral(threads, message, quotedAnnouncements);
+                        response = postGeneral(threads, message, quotedAnnouncements);
+                        System.out.println(response);
                         break;
 
                     case 5: // readGeneral
                         nAnnouncement = requestInt("Enter the number of announcements to read:");
 
-                        readGeneral(threads, nAnnouncement);
+                        response = readGeneral(threads, nAnnouncement);
+                        System.out.println(response);
                         break;
 
                     case 6: // exit
@@ -148,7 +146,19 @@ public class Client implements ClientCallbackInterface {
         }
     }
 
-    private void post(List<Thread> threads, String message, List<String> quotedAnnouncements) throws InterruptedException {
+    public void register(List<Thread> threads) throws InterruptedException {
+        for (int i = 0; i < _N; i++) {
+            threads.add(new Thread(new RegisterRequest(_forums.get(i), _publicKey, _serverKey)));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+            System.out.println("Thread joined.");
+        }
+    }
+
+    public String post(List<Thread> threads, String message, List<String> quotedAnnouncements) throws InterruptedException {
         _atomicRegister.setWts();
         int wts = _atomicRegister.getWts();
         _atomicRegister.clearAcklist();
@@ -167,13 +177,13 @@ public class Client implements ClientCallbackInterface {
         System.out.println("\nVerifying post....");
 
         if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
-            System.out.println("\nPost verified.");
+            return WRITE_RESPONSE;
         } else {
             throw new IllegalArgumentException(BYZANTINE_ERROR);
         }
     }
 
-    private void read(List<Thread> threads, PublicKey publicKey, int nAnnouncement) throws InterruptedException {
+    public String read(List<Thread> threads, PublicKey publicKey, int nAnnouncement) throws InterruptedException {
         _atomicRegister.setRid();
         int rid = _atomicRegister.getRid();
         _atomicRegister.clearAnswers();
@@ -189,10 +199,10 @@ public class Client implements ClientCallbackInterface {
             System.out.println("Thread joined.");
         }
 
-        printAnnouncementsAtomic();
+        return printAnnouncementsAtomic();
     }
 
-    private void postGeneral(List<Thread> threads, String message, List<String> quotedAnnouncements) throws InterruptedException {
+    public String postGeneral(List<Thread> threads, String message, List<String> quotedAnnouncements) throws InterruptedException {
         _regularRegisterGeneral.setRid();
         int rid = _regularRegisterGeneral.getRid();
         _regularRegisterGeneral.clearAcklist();
@@ -236,13 +246,14 @@ public class Client implements ClientCallbackInterface {
         System.out.println("\nVerifying post....");
         if (_regularRegisterGeneral.getAcklist().size() > (_N + _f) / 2) {
             _regularRegisterGeneral.clearAcklist();
-            System.out.println("\nPost verified!");
+
+            return WRITE_RESPONSE;
         } else {
             throw new IllegalArgumentException(BYZANTINE_ERROR);
         }
     }
 
-    private void readGeneral(List<Thread> threads, int nAnnouncement) throws InterruptedException {
+    public String readGeneral(List<Thread> threads, int nAnnouncement) throws InterruptedException {
         _regularRegisterGeneral.setRid();
         int rid = _regularRegisterGeneral.getRid();
         _regularRegisterGeneral.clearAcklist();
@@ -259,7 +270,7 @@ public class Client implements ClientCallbackInterface {
             System.out.println("Thread joined.");
         }
 
-        printAnnouncements();
+        return printAnnouncements();
     }
 
     @Override
@@ -277,7 +288,7 @@ public class Client implements ClientCallbackInterface {
         System.out.println("Wrote back " + res.getAnnouncements() + " announcements.");
     }
 
-    private void printAnnouncements() {
+    private String printAnnouncements() {
         Response v = highestRes();
         List<Announcement> announcements = v.getAnnouncements();
 
@@ -286,7 +297,7 @@ public class Client implements ClientCallbackInterface {
             System.out.println(a);
         }
 
-        System.out.println("Got " + announcements.size() + " announcement(s)!");
+        return "Got " + announcements.size() + " announcement(s)!";
     }
 
     private Response highestRes() throws IllegalArgumentException {
@@ -317,7 +328,7 @@ public class Client implements ClientCallbackInterface {
         throw new IllegalArgumentException(BYZANTINE_ERROR);
     }
 
-    private void printAnnouncementsAtomic() {
+    private String printAnnouncementsAtomic() {
         try {
             Response v = bestQuorum();
             List<Announcement> announcements = v.getAnnouncements();
@@ -327,9 +338,9 @@ public class Client implements ClientCallbackInterface {
                 System.out.println(a);
             }
 
-            System.out.println("Got " + announcements.size() + " announcement(s)!");
+            return "Got " + announcements.size() + " announcement(s)!";
         } catch (IllegalArgumentException | RemoteException | NullPointerException e) {
-            System.out.println(BYZANTINE_ERROR);
+            throw new IllegalArgumentException(BYZANTINE_ERROR);
         }
     }
 

@@ -1,112 +1,110 @@
 package secforum;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import security.SigningSHA256_RSA;
 import security.Utils;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ClientTests {
-    private Announcement _announcement;
-    private PublicKey _publicKey;
-    private String _message;
-    private List<Announcement> _quotedAnnouncements;
-    private byte[] _signature;
-    private int _counter;
-    private int _nonce;
-    private int _wts;
-    private int _rank;
+    private static Client _client;
+    private static List<Thread> _threads;
+    private static String _message;
+    private static List<String> _quotedAnnouncements;
+    private static PublicKey _publicKey;
+    private static int _nAnnouncements;
 
-    @BeforeEach
-    public void setup() {
+    private final String WRITE_RESPONSE = "Post verified!";
+    private final String READ_RESPONSE = "Got 1 announcement(s)!";
+    private static final String ID = "1";
+    private static final String STATE_PATH = "../secforum-server/src/main/resources/";
+
+    @BeforeAll
+    static void setup() {
+
         try {
-            _publicKey = Utils.loadPublicKey("1");
-            _message = "";
+            ByteArrayInputStream in = new ByteArrayInputStream(("client" + ID).getBytes());
+            System.setIn(in);
+
+            _client = new Client(ID);
+            _threads = new ArrayList<>();
+            _client.register(_threads);
+            _threads = new ArrayList<>();
+
+            _message = "Hello World!";
             _quotedAnnouncements = new ArrayList<>();
-            _counter = 0;
-            _nonce = 0;
-            _wts = 0;
-            _rank = 1;
-
-            PrivateKey privateKey = Utils.loadPrivateKey("1", "client1");
-            byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, _nonce);
-
-            _signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
-        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
+            _publicKey = Utils.loadPublicKey("1");
+            _nAnnouncements = 0;
+        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-//    @Test
-//    public void validPost() {
-//        try {
-//            _announcement = new Announcement(_publicKey, _message, _quotedAnnouncements, _nonce, _signature, _counter, _wts, _rank);
-//            assertEquals(Utils.loadPublicKey("1"), _announcement.getPubKey());
-//            assertEquals("", _announcement.getMessage());
-//            assertEquals(0, _announcement.nQuotedAnnouncements());
-//
-//            byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, _nonce);
-//            assertTrue(SigningSHA256_RSA.verify(messageBytes, _signature, _publicKey));
-//
-//        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void validAnnouncement254() {
-//        String repeated = new String(new char[254]);
-//        try {
-//            _announcement = new Announcement(_publicKey, repeated, _quotedAnnouncements, _nonce, _signature, _counter, _wts, _rank);
-//            assertEquals(repeated, _announcement.getMessage());
-//        } catch (RemoteException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void validAnnouncement255() {
-//        String repeated = new String(new char[255]);
-//        try {
-//            _announcement = new Announcement(_publicKey, repeated, _quotedAnnouncements, _nonce, _signature, _counter, _wts, _rank);
-//            assertEquals(repeated, _announcement.getMessage());
-//        } catch (RemoteException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void invalidAnnouncement() {
-//        assertThrows(RemoteException.class,
-//                () -> new Announcement(_publicKey, new String(new char[256]), _quotedAnnouncements, _nonce, _signature, _counter, _wts, _rank));
-//    }
-//
-//    @Test
-//    public void invalidAnnouncementNullPubKey() {
-//        assertThrows(RemoteException.class,
-//                () -> _announcement = new Announcement(null, _message, _quotedAnnouncements, _nonce, _signature, _counter, _wts, _rank));
-//    }
-//
-//    @Test
-//    public void invalidAnnouncementNullMessage() {
-//        assertThrows(RemoteException.class,
-//                () -> new Announcement(_publicKey, null, _quotedAnnouncements, _nonce, _signature, _counter, _wts, _rank));
-//    }
-//
-//    @Test
-//    public void invalidAnnouncementNullQuotedAnnouncements() {
-//        assertThrows(RemoteException.class,
-//                () -> new Announcement(_publicKey, _message, null, _nonce, _signature, _counter, _wts, _rank));
-//    }
+    @Test
+    void validPost() {
+        try {
+            String response = _client.post(_threads, _message, _quotedAnnouncements);
+            assertEquals(WRITE_RESPONSE, response);
+        } catch (InterruptedException e) {
+            fail();
+        }
+    }
 
+    @Test
+    void validRead() {
+        try {
+            String response = _client.read(_threads, _publicKey, _nAnnouncements);
+            assertEquals(READ_RESPONSE, response);
+        } catch (InterruptedException e) {
+            fail();
+        }
+    }
+
+    @Test
+    void validPostGeneral() {
+        try {
+            String response = _client.postGeneral(_threads, _message, _quotedAnnouncements);
+            assertEquals(WRITE_RESPONSE, response);
+        } catch (InterruptedException e) {
+            fail();
+        }
+    }
+
+    @Test
+    void validReadGeneral() {
+        try {
+            String response = _client.readGeneral(_threads, _nAnnouncements);
+            assertEquals(READ_RESPONSE, response);
+        } catch (InterruptedException e) {
+            fail();
+        }
+    }
+
+    @AfterEach
+    void reset() {
+        _threads = new ArrayList<>();
+    }
+
+    @AfterAll
+    static void tearDown() {
+        _message = null;
+        _quotedAnnouncements = null;
+
+        for(int i = 0; i < 4; i++) {
+            File forum = new File(STATE_PATH + "forum" + i + ".ser");
+            File backup = new File(STATE_PATH + "forum_backup" + i + ".ser");
+            forum.delete();
+            backup.delete();
+        }
+    }
 }

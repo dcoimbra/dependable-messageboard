@@ -30,7 +30,7 @@ public class AnnouncementTests {
     public void setup() {
         try {
             _publicKey = Utils.loadPublicKey("1");
-            _message = "";
+            _message = "Hello World!";
             _quotedAnnouncements = new ArrayList<>();
             _counter = 0;
             _nonce = 0;
