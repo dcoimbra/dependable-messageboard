@@ -1,93 +1,102 @@
-//package secforum;
-//
-//import org.junit.jupiter.api.AfterEach;
-//import org.junit.jupiter.api.BeforeAll;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import secforum.response.Response;
-//import security.SigningSHA256_RSA;
-//import security.Utils;
-//
-//import java.io.File;
-//import java.io.IOException;
-//import java.security.*;
-//import java.util.ArrayList;
-//import java.util.List;
-//
-//import static org.junit.jupiter.api.Assertions.*;
-//
-//public class ForumSecurityTest {
-//    private static PublicKey _pubKey1;
-//    private static PrivateKey _privKey1;
-//    private static PublicKey _pubKey2;
-//    private static Integer _nonce;
-//
-//    private static final String NOT_REGISTERED = "\nRequest error! User is not registered!";
-//    private static final String SECURITY_ERROR = "\nSecurity error! Message was altered!";
-//
-//    private Forum _forum;
-//    private String _message;
-//    private List<String> _quotedAnnouncements;
-//    private List<String> _wrongQuotedAnnouncements;
-//    private byte[] _signaturePost;
-//    private byte[] _signatureAnnouncement;
-//    private byte[] _signatureRead;
-//    private byte[] _signatureReadGeneral;
-//    private int _wts;
-//    private int _rank;
-//    private int _rid;
-//
-//    @BeforeAll
-//    public static void generate() {
-//        try {
-//            _nonce = 1;
-//
-//            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-//
-//            SecureRandom random1 = SecureRandom.getInstance("SHA1PRNG");
-//            SecureRandom random2 = SecureRandom.getInstance("SHA1PRNG");
-//
-//            generator.initialize(2048, random1);
-//
-//            KeyPair pair1 = generator.generateKeyPair();
-//            _pubKey1 = pair1.getPublic();
-//            _privKey1 = pair1.getPrivate();
-//
-//            generator.initialize(2048, random2);
-//
-//            KeyPair pair2 = generator.generateKeyPair();
-//            _pubKey2 = pair2.getPublic();
-//        } catch (NoSuchAlgorithmException e) {
-//            fail();
-//        }
-//    }
-//
-//    @BeforeEach
-//    public void setUp() {
-//        try {
-//            _forum = new Forum("server");
-//
-//            _forum.register(_pubKey1);
-//
-//            _message = "ola";
-//            _quotedAnnouncements = new ArrayList<>();
-//            _wrongQuotedAnnouncements = new ArrayList<>();
-//            _wrongQuotedAnnouncements.add("a");
-//
-//            _wts = 0;
-//            _rank = 1;
-//            _rid = 0;
-//        } catch (IOException e) {
-//            fail();
-//        }
-//    }
-//
+package secforum;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import secforum.response.Response;
+import security.SigningSHA256_RSA;
+import security.Utils;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ForumSecurityTest {
+    private static PublicKey _pubKey1;
+    private static PrivateKey _privKey1;
+    private static PublicKey _pubKey2;
+    private static Integer _nonce;
+
+    private static final String NOT_REGISTERED = "\nRequest error! User is not registered!";
+    private static final String SECURITY_ERROR = "\nSecurity error! Message was altered!";
+
+    private ArrayList<Forum> _forumList;
+    private Forum _forum;
+    private String _message;
+    private List<String> _quotedAnnouncements;
+    private List<String> _wrongQuotedAnnouncements;
+    private byte[] _signaturePost;
+    private byte[] _signatureAnnouncement;
+    private byte[] _signatureRead;
+    private byte[] _signatureReadGeneral;
+    private int _wts;
+    private int _rank;
+    private int _rid;
+
+    @BeforeAll
+    public static void generate() {
+        try {
+            _nonce = 1;
+
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+
+            SecureRandom random1 = SecureRandom.getInstance("SHA1PRNG");
+            SecureRandom random2 = SecureRandom.getInstance("SHA1PRNG");
+
+            generator.initialize(2048, random1);
+
+            KeyPair pair1 = generator.generateKeyPair();
+            _pubKey1 = pair1.getPublic();
+            _privKey1 = pair1.getPrivate();
+
+            generator.initialize(2048, random2);
+
+            KeyPair pair2 = generator.generateKeyPair();
+            _pubKey2 = pair2.getPublic();
+        } catch (NoSuchAlgorithmException e) {
+            fail();
+        }
+    }
+
+    @BeforeEach
+    public void setUp() {
+        try {
+            _forumList = new ArrayList<>();
+
+            for(int i = 0; i < 4; i++) {
+                Forum forum = new Forum("server");
+                _forumList.add(forum);
+                _forum = forum;
+            }
+
+            for(Forum forum : _forumList) {
+                forum.register(_pubKey1);
+            }
+
+            _message = "ola";
+            _quotedAnnouncements = new ArrayList<>();
+            _wrongQuotedAnnouncements = new ArrayList<>();
+            _wrongQuotedAnnouncements.add("a");
+
+            _wts = 0;
+            _rank = 1;
+            _rid = 0;
+        } catch (IOException e) {
+            fail();
+        }
+    }
+
 //    @Test
 //    public void getNonceSignatureTest() {
-//        Response res = _forum.getNonce(_pubKey1);
+//        Response res = _forum.getNonce(_pubKey1);;
 //
 //        try{
-//            Integer nonce = res.verifyNonce(_forum.loadPublicKey());
+//            Integer nonce = res.verifyNonce(_forumList.get(0).loadPublicKey());
 //            assertEquals(1, nonce);
 //        } catch (IllegalArgumentException iae) {
 //            System.out.println(iae.getMessage());
@@ -283,17 +292,17 @@
 //
 //        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
 //    }
-//
-//    @AfterEach
-//    public void tearDown() {
-//        _forum = null;
-//        _message = null;
-//        _quotedAnnouncements = null;
-//        _signaturePost = null;
-//
-//        File forum = new File("src/main/resources/forum.ser");
-//        File backup = new File("src/main/resources/forum_backup.ser");
-//        forum.delete();
-//        backup.delete();
-//    }
-//}
+
+    @AfterEach
+    public void tearDown() {
+        _forum = null;
+        _message = null;
+        _quotedAnnouncements = null;
+        _signaturePost = null;
+
+        File forum = new File("src/main/resources/forum.ser");
+        File backup = new File("src/main/resources/forum_backup.ser");
+        forum.delete();
+        backup.delete();
+    }
+}

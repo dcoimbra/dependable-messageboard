@@ -13,8 +13,10 @@ import java.util.List;
 public class ForumServer {
 
     private static Forum _forum;
-    private static String _filename = "src/main/resources/forum.ser";
-    private static String _backup = "src/main/resources/forum_backup.ser";
+    private static String _filename = "src/main/resources/forum";
+    private static String _backup = "src/main/resources/forum_backup";
+    private static String _extention = ".ser";
+    private static int _id;
 
     public static Forum getForum() {
         return _forum;
@@ -26,7 +28,7 @@ public class ForumServer {
 
     public static void readForum() throws FileNotFoundException {
        try {
-           FileInputStream file = new FileInputStream(_filename);
+           FileInputStream file = new FileInputStream(_filename + _id + _extention);
            ObjectInputStream in = new ObjectInputStream(file);
 
            Forum forum = (Forum) in.readObject();
@@ -36,7 +38,7 @@ public class ForumServer {
            ForumServer.setForum(forum);
        } catch (ClassNotFoundException | IOException e) {
            try {
-               FileInputStream file_backup = new FileInputStream(_backup);
+               FileInputStream file_backup = new FileInputStream(_backup + _id + _extention);
                ObjectInputStream backup_in = new ObjectInputStream(file_backup);
 
                Forum forum = (Forum) backup_in.readObject();
@@ -53,14 +55,14 @@ public class ForumServer {
     }
 
     public static void writeForum(Forum forum) throws IOException {
-        FileOutputStream file = new FileOutputStream(_filename);
+        FileOutputStream file = new FileOutputStream(_filename + _id + _extention);
         ObjectOutputStream out = new ObjectOutputStream(file);
 
         out.writeObject(forum);
         out.close();
         file.close();
 
-        FileOutputStream backup = new FileOutputStream(_backup);
+        FileOutputStream backup = new FileOutputStream(_backup + _id + _extention);
         ObjectOutputStream backup_out = new ObjectOutputStream(backup);
 
         backup_out.writeObject(forum);
@@ -69,11 +71,8 @@ public class ForumServer {
     }
 
     public static List<ForumReliableBroadcastInterface> searchForums(int id) {
-
         List<ForumReliableBroadcastInterface> otherServers = new ArrayList<>();
-
         System.out.println("Looking for other servers...");
-
         boolean foundServer = false;
 
         for (int i = 0; i < 4; i++) {
@@ -93,12 +92,12 @@ public class ForumServer {
 
     public static void main(String[] args) {
         String password = args[0];
-        int id = Integer.parseInt(args[1]);
+        _id = Integer.parseInt(args[1]);
         int registryPort = 1099;
         System.out.println("Main OK");
 
-        System.out.println("Id: " + id);
-        System.out.println("Port: " + (registryPort + id));
+        System.out.println("Id: " + _id);
+        System.out.println("Port: " + (registryPort + _id));
 
         try {
             try {
@@ -106,10 +105,10 @@ public class ForumServer {
             } catch (FileNotFoundException e) {
                 _forum = new Forum(password);
             }
-            Registry rmiRegistry = LocateRegistry.createRegistry(registryPort + id);
-            rmiRegistry.rebind("forum" + id, ForumServer.getForum());
+            Registry rmiRegistry = LocateRegistry.createRegistry(registryPort + _id);
+            rmiRegistry.rebind("forum" + _id, ForumServer.getForum());
 
-            List<ForumReliableBroadcastInterface> otherServers = searchForums(id);
+            List<ForumReliableBroadcastInterface> otherServers = searchForums(_id);
             ForumServer.getForum().setOtherServers(otherServers);
 
             System.out.println("Forum server ready");
