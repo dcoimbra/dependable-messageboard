@@ -152,7 +152,6 @@ public class Client implements ClientCallbackInterface {
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
     }
 
@@ -169,7 +168,6 @@ public class Client implements ClientCallbackInterface {
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         System.out.println("\nVerifying post....");
@@ -194,7 +192,6 @@ public class Client implements ClientCallbackInterface {
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         return printAnnouncementsAtomic();
@@ -215,7 +212,6 @@ public class Client implements ClientCallbackInterface {
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         int maxTs;
@@ -223,7 +219,7 @@ public class Client implements ClientCallbackInterface {
             maxTs = highestRes().getAnnouncements().get(0).getTs() + 1;
         } catch (IllegalArgumentException iae) {
             if(_regularRegisterGeneral.getReadlist().size() < 2) {
-                maxTs = 0;
+                maxTs = 1;
             } else {
                 throw iae;
             }
@@ -238,7 +234,6 @@ public class Client implements ClientCallbackInterface {
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         System.out.println("\nVerifying post....");
@@ -265,7 +260,6 @@ public class Client implements ClientCallbackInterface {
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         return printAnnouncements();
@@ -285,7 +279,6 @@ public class Client implements ClientCallbackInterface {
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
     }
 

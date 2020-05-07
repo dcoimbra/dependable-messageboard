@@ -20,22 +20,22 @@ import java.util.concurrent.TimeUnit;
 
 public class Forum extends UnicastRemoteObject implements ForumInterface, ForumReliableBroadcastInterface, Serializable {
 
-    private static final int _f = 1;
-    private static final int _N = 3 * _f + 1;
     private final Map<PublicKey, Account> _accounts;
     private final Board _generalBoard;
     private PrivateKey _privKey;
     private final ExceptionResponse _notClient;
+
+    private static final int _f = 1;
+    private static final int _N = 3 * _f + 1;
     private int _ts;
-    private List<ForumReliableBroadcastInterface> _otherServers;
-
-    private transient CountDownLatch _echoLatch = new CountDownLatch(3);
-    private transient CountDownLatch _readyLatch = new CountDownLatch(3);
-
-    private final List<EchoMessage> _echos;
-    private final List<EchoMessage> _readys;
-    private boolean _delivered;
     private int _rank;
+
+    private List<ForumReliableBroadcastInterface> _otherServers;
+    private final List<EchoMessage> _echos;
+    private transient CountDownLatch _echoLatch = new CountDownLatch(3);
+    private final List<EchoMessage> _readys;
+    private transient CountDownLatch _readyLatch = new CountDownLatch(3);
+    private boolean _delivered;
 
     private static final String POST_RESPONSE = "Successfully uploaded the post.";
     private static final String INTERNAL_ERROR = "\nInternal server error! Operation failed!";
@@ -202,9 +202,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         if (delivered) {
             if (ts > _ts || (ts == _ts && rank > _rank)) {
-                _ts = ts;
-                _rank = rank;
-
                 try {
                     byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), rid, ts, rank);
                     if (!SigningSHA256_RSA.verify(messageBytes, requestSignature, pubKey)) {
@@ -216,6 +213,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
                         _generalBoard.post(pubKey, message, announcements, account.getNonce(), announcementSignature, account.getCounter(), ts, rank);
                         System.out.println("Someone just posted in the general board.");
 
+                        _ts = ts;
+                        _rank = rank;
                         account.setNonce();
                         res = new WriteResponse(POST_RESPONSE, _privKey, account.getNonce(), rid);
                         ForumServer.writeForum(this);
