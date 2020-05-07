@@ -19,40 +19,38 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ForumSecurityTests {
+    private Forum _forum;
     private static PublicKey _pubKey1;
-    private static PrivateKey _privKey1;
     private static PublicKey _pubKey2;
     private static PublicKey _serverKey;
-    private static Integer _nonce;
+    private static PrivateKey _privKey1;
 
-    private static final String NOT_REGISTERED = "\nRequest error! User is not registered!";
-    private static final String SECURITY_ERROR = "\nSecurity error! Message was altered!";
-    private static final String QUOTE_ERROR = "\nRequest error! Announcement a does not exist!";
-    private static final String READ_N_ERROR = "\nRequest error! Board does not have that many announcements!";
-
-    private static final String POST_RESPONSE = "Successfully uploaded the post.";
-
-    private Forum _forum;
     private String _message;
     private List<String> _quotedAnnouncements;
     private List<String> _wrongQuotedAnnouncements;
     private int _nAnnouncements;
+    private static Integer _nonce;
+    private int _wts;
+    private int _rank;
+    private int _rid;
+    @Mocked private Remote _clientStub;
+
     private byte[] _signaturePost;
     private byte[] _signatureAnnouncement;
     private byte[] _signatureRead;
     private byte[] _signatureReadGeneral;
-    private int _wts;
-    private int _rank;
-    private int _rid;
 
-    @Mocked
-    private Remote _clientStub;
+    private static final int FORUM_ID = 0;
+    private static final String INVALID_ID = "vmuiabvauva";
+    private static final String POST_RESPONSE = "Successfully uploaded the post.";
+    private static final String NOT_REGISTERED = "\nRequest error! User is not registered!";
+    private static final String SECURITY_ERROR = "\nSecurity error! Message was altered!";
+    private static final String QUOTE_ERROR = "\nRequest error! Announcement " + INVALID_ID + " does not exist!";
+    private static final String READ_HIGH = "\nRequest error! Board does not have that many announcements!";
 
     @BeforeAll
     public static void generate() {
         try {
-            _nonce = 1;
-
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
 
             SecureRandom random1 = SecureRandom.getInstance("SHA1PRNG");
@@ -74,15 +72,16 @@ public class ForumSecurityTests {
     @BeforeEach
     public void setUp() {
         try {
-            _forum = new Forum("server");
-            _serverKey = _forum.loadPublicKey();
+            _forum = new Forum("server", FORUM_ID);
             _forum.doRegister(_pubKey1);
+            _serverKey = _forum.loadPublicKey();
 
-            _message = "ola";
+            _message = "Hello World!";
             _quotedAnnouncements = new ArrayList<>();
             _wrongQuotedAnnouncements = new ArrayList<>();
-            _wrongQuotedAnnouncements.add("a");
+            _wrongQuotedAnnouncements.add(INVALID_ID);
             _nAnnouncements = 1;
+            _nonce = 1;
 
             _wts = 1;
             _rank = 1;
@@ -98,7 +97,7 @@ public class ForumSecurityTests {
 
         try{
             Integer nonce = res.verifyNonce(_forum.loadPublicKey());
-            assertEquals(1, nonce);
+            assertEquals(_nonce, nonce);
         } catch (IllegalArgumentException iae) {
             System.out.println(iae.getMessage());
             fail();
@@ -220,7 +219,7 @@ public class ForumSecurityTests {
 
         Response res = _forum.doRead(_pubKey1, _pubKey1, _nAnnouncements + 1, _rid, _clientStub, _signatureRead);
         assertFalse(res.verify(_serverKey, _nonce + 3, _rid));
-        assertEquals(READ_N_ERROR, res.getException().getMessage());
+        assertEquals(READ_HIGH, res.getException().getMessage());
 
         messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, _nAnnouncements, _nonce + 4, _rid + 1, _clientStub);
         _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
@@ -358,7 +357,7 @@ public class ForumSecurityTests {
 
         Response res = _forum.doReadGeneral(_pubKey1, _nAnnouncements + 1, _rid + 1, _signatureReadGeneral);
         assertFalse(res.verify(_serverKey, _nonce + 3, _rid + 1));
-        assertEquals(READ_N_ERROR, res.getException().getMessage());
+        assertEquals(READ_HIGH, res.getException().getMessage());
 
         messageBytesRead = Utils.serializeMessage(_pubKey1, _nAnnouncements, _nonce + 4, _rid + 2);
         _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
@@ -390,11 +389,9 @@ public class ForumSecurityTests {
         _signatureAnnouncement = null;
         _signaturePost = null;
 
-        for(int i = 0; i < 4; i++) {
-            File forum = new File("src/main/resources/forum" + i + ".ser");
-            File backup = new File("src/main/resources/forum_backup" + i + ".ser");
-            forum.delete();
-            backup.delete();
-        }
+        File forum = new File("src/main/resources/forum" + FORUM_ID + ".ser");
+        File backup = new File("src/main/resources/forum_backup" + FORUM_ID + ".ser");
+        forum.delete();
+        backup.delete();
     }
 }

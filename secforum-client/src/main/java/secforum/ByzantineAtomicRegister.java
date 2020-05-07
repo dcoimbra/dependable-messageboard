@@ -12,7 +12,7 @@ public class ByzantineAtomicRegister {
     private final List<Response> _answers;
 
     public ByzantineAtomicRegister() {
-        _wts = 0;
+        _wts = 1;
         _acklist = new Vector<>();
         _rid = 0;
         _answers = new Vector<>();

@@ -25,10 +25,11 @@ public class ClientTests {
     private static PublicKey _publicKey;
     private static int _nAnnouncements;
 
+    private static final String ID = "1";
+    private static final String INVALID_ID = "vmuiabvauva";
+    private static final String STATE_PATH = "../secforum-server/src/main/resources/";
     private final String WRITE_RESPONSE = "Post verified!";
     private final String READ_RESPONSE = "Got 1 announcement(s)!";
-    private static final String ID = "1";
-    private static final String STATE_PATH = "../secforum-server/src/main/resources/";
 
     @BeforeAll
     static void setup() {
@@ -39,13 +40,14 @@ public class ClientTests {
 
             _client = new Client(ID);
             _threads = new ArrayList<>();
+
             _client.register(_threads);
             _threads = new ArrayList<>();
 
             _postMessage = "Hello World!";
             _readMessage = "Goodbye World!";
             _quotedAnnouncements = new ArrayList<>();
-            _publicKey = Utils.loadPublicKey("1");
+            _publicKey = Utils.loadPublicKey(ID);
             _nAnnouncements = 1;
         } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | InterruptedException e) {
             e.printStackTrace();
@@ -71,7 +73,7 @@ public class ClientTests {
 
     @Test
     void invalidPostQuotedAnnouncementDoesNotExist() {
-        _quotedAnnouncements.add("aabbawubfafew");
+        _quotedAnnouncements.add(INVALID_ID);
         assertThrows(IllegalArgumentException.class,
                 () -> _client.post(_threads, _postMessage, _quotedAnnouncements));
     }
@@ -147,7 +149,7 @@ public class ClientTests {
 
     @Test
     void invalidPostGeneralQuotedAnnouncementDoesNotExist() {
-        _quotedAnnouncements.add("a");
+        _quotedAnnouncements.add(INVALID_ID);
         assertThrows(IllegalArgumentException.class,
                 () -> _client.postGeneral(_threads, _postMessage, _quotedAnnouncements));
     }

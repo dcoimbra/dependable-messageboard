@@ -51,8 +51,8 @@ public class AnnouncementTests {
         try {
             _announcement = new Announcement(_publicKey, _message, _quotedAnnouncements, _nonce, _signature, _counter, _wts, _rank);
             assertEquals(Utils.loadPublicKey("1"), _announcement.getPubKey());
-            assertEquals("", _announcement.getMessage());
-            assertEquals(0, _announcement.nQuotedAnnouncements());
+            assertEquals(_message, _announcement.getMessage());
+            assertEquals(_quotedAnnouncements.size(), _announcement.nQuotedAnnouncements());
 
             byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, _nonce);
             assertTrue(SigningSHA256_RSA.verify(messageBytes, _signature, _publicKey));

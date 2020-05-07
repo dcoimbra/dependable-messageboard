@@ -159,7 +159,6 @@ public class Client implements ClientCallbackInterface {
     }
 
     public String post(List<Thread> threads, String message, List<String> quotedAnnouncements) throws InterruptedException {
-        _atomicRegister.setWts();
         int wts = _atomicRegister.getWts();
         _atomicRegister.clearAcklist();
 
@@ -178,6 +177,7 @@ public class Client implements ClientCallbackInterface {
 
         System.out.println("\nVerifying post....");
         if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
+            _atomicRegister.setWts();
             return WRITE_RESPONSE;
         } else {
             throw new IllegalArgumentException(BYZANTINE_ERROR);
