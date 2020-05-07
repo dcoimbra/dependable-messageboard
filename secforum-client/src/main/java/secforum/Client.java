@@ -52,7 +52,8 @@ public class Client implements ClientCallbackInterface {
                 System.out.println("Found server: " + name);
             }
 
-        } catch (NotBoundException | NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
+        } catch (NotBoundException | NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException |
+                UnrecoverableKeyException e) {
             System.out.println(e.getMessage());
         }
     }
@@ -138,8 +139,8 @@ public class Client implements ClientCallbackInterface {
                 System.out.println("ERROR! Command must be a number between 1 and 6!");
             } catch (InterruptedException e) {
                 System.out.println("Thread interrupted.");
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
+            } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
+                System.out.println("Internal error.");
             }
         }
     }
@@ -151,7 +152,7 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join(10000);
+            t.join(20000);
             if (t.isAlive()) {
                 t.interrupt();
             }
@@ -169,7 +170,7 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join(10000);
+            t.join(20000);
             if (t.isAlive()) {
                 t.interrupt();
             }
@@ -196,7 +197,7 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join(10000);
+            t.join(20000);
             if (t.isAlive()) {
                 t.interrupt();
             }
@@ -219,7 +220,7 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join(10000);
+            t.join(20000);
             if (t.isAlive()) {
                 t.interrupt();
             }
@@ -244,7 +245,7 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join(10000);
+            t.join(20000);
             if (t.isAlive()) {
                 t.interrupt();
             }
@@ -273,7 +274,7 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join(10000);
+            t.join(20000);
             if (t.isAlive()) {
                 t.interrupt();
             }
@@ -295,7 +296,7 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join(10000);
+            t.join(20000);
             if (t.isAlive()) {
                 t.interrupt();
             }
@@ -360,7 +361,6 @@ public class Client implements ClientCallbackInterface {
     private String printAnnouncementsAtomic() {
         try {
             Response v = bestQuorum();
-            readComplete();
 
             List<Announcement> announcements = v.getAnnouncements();
 
@@ -369,8 +369,9 @@ public class Client implements ClientCallbackInterface {
                 System.out.println(a);
             }
 
+            readComplete();
             return "Got " + announcements.size() + " announcement(s)!";
-        } catch (IllegalArgumentException | NullPointerException | InterruptedException e) {
+        } catch (IllegalArgumentException | InterruptedException e) {
             throw new IllegalArgumentException(BYZANTINE_ERROR);
         }
     }

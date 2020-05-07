@@ -125,8 +125,9 @@ public class Account implements Serializable {
             incMyBroadcastNonce();
 
             System.out.println("Waiting for echo quorum...");
-            _echoLatch.await(10, TimeUnit.SECONDS);
+            _echoLatch.await(5, TimeUnit.SECONDS);
 
+            _echos.add(message);
             EchoMessage echoMessage = Forum.compareMessages(_echos);
 
             if (echoMessage == null) {
@@ -154,8 +155,9 @@ public class Account implements Serializable {
             incMyBroadcastNonce();
 
             System.out.println("Waiting for ready quorum...");
-            _readyLatch.await(10, TimeUnit.SECONDS);
+            _readyLatch.await(5, TimeUnit.SECONDS);
 
+            _readys.add(echoMessage);
             EchoMessage readyMessage = Forum.compareMessages(_readys);
 
             if (readyMessage == null) {

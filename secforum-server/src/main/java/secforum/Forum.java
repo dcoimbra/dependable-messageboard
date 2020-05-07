@@ -140,6 +140,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @return Response positive if successfully registered
      */
     public synchronized Response register(PublicKey pubKey) {
+        System.out.println("====== REGISTER ======");
+
         EchoMessage echoMessage = new EchoMessageRegister(_id, pubKey, _privKey);
 
         EchoMessage delivered;
@@ -187,6 +189,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @param signature signature of the sender
      */
     public Response post(PublicKey pubKey, String message, List<String> a, int wts, int rank, byte[] signature) {
+        System.out.println("====== POST ======");
         Account account = _accounts.get(pubKey);
             if (account == null) {
                 return _notClient;
@@ -249,6 +252,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      */
     public synchronized Response postGeneral(PublicKey pubKey, String message, List<String> a, int rid, int ts,
                                              int rank, byte[] requestSignature, byte[] announcementSignature) {
+        System.out.println("====== POSTGENERAL ======");
+
         Account account = _accounts.get(pubKey);
         if(account == null) {
             return _notClient;
@@ -310,6 +315,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @return Response read posts
      */
     public Response read(PublicKey senderPubKey, PublicKey pubKey, int number, int rid, Remote clientStub, byte[] signature) {
+        System.out.println("====== READ ======");
         Account senderAccount = _accounts.get(senderPubKey);
         if(senderAccount == null) {
             return _notClient;
@@ -377,6 +383,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @return read posts
      */
     public Response readGeneral(PublicKey senderPubKey, int number, int rid, byte[] signature) {
+        System.out.println("====== READGENERAL ======");
         Account senderAccount = _accounts.get(senderPubKey);
         if(senderAccount == null) {
             return _notClient;
@@ -433,6 +440,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
     public Response readComplete(PublicKey pubKey, Remote clientStub, int rid, byte[] signature) {
+        System.out.println("====== READCOMPLETE ======");
         Account senderAccount = _accounts.get(pubKey);
         if(senderAccount == null) {
             return null;
@@ -464,6 +472,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             if (!SigningSHA256_RSA.verify(messageBytes, signature, pubKey)) {
                 senderAccount.setNonce();
             } else {
+                System.out.println("Removing listener");
                 senderAccount.removeListener((ClientCallbackInterface) clientStub);
                 ForumServer.writeForum(this);
             }
