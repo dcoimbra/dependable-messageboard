@@ -1,5 +1,6 @@
 package secforum;
 
+import mockit.Mocked;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +11,7 @@ import security.Utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.rmi.Remote;
 import java.security.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,9 @@ public class ForumSecurityTests {
     private int _wts;
     private int _rank;
     private int _rid;
+
+    @Mocked
+    private Remote _clientStub;
 
     @BeforeAll
     public static void generate() {
@@ -161,48 +166,71 @@ public class ForumSecurityTests {
         assertThrows(IllegalArgumentException.class, () -> res.verify(_serverKey, _nonce + 3, _wts));
     }
 
-//    @Test
-//    public void readReplayAttack() {
-//        try {
-//            byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce);
-//            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
-//
-//            _forum.doRead(_pubKey1, _pubKey1, 0, _signatureRead);
-//            Response res = _forum.doRead(_pubKey1, _pubKey1, 0, _signatureRead);
-//
-//            assertEquals("Security error. Message was altered.", res.getException().getMessage());
-//        } catch (IllegalArgumentException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void readIntegrityTest() {
-//        try {
-//            byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce);
-//            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
-//            Response res = _forum.doRead(_pubKey1, _pubKey1, 404, _signatureRead);
-//
-//            assertEquals("Security error. Message was altered.", res.getException().getMessage());
-//        } catch (IllegalArgumentException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void readRejectAttackTest() {
-//        byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 3, _nonce);
-//        _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
-//
-//        Response res = _forum.doRead(_pubKey1, _pubKey1, 3, _signatureRead);
-//
-//        messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce + 1);
-//        _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
-//
-//        _forum.doRead(_pubKey1, _pubKey1, 0, _signatureRead);
-//
-//        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
-//    }
+    @Test
+    public void readReplayAttack() {
+        try {
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _wts, _rank);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+            _forum.doPost(_pubKey1, _message, _quotedAnnouncements, _wts, _rank, _signaturePost);
+
+            byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, _nAnnouncements, _nonce + 2, _rid, _clientStub);
+            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+            Response res = _forum.doRead(_pubKey1, _pubKey1, _nAnnouncements, _rid, _clientStub, _signatureRead);
+            assertTrue(res.verify(_serverKey, _nonce + 3, _rid));
+            assertEquals(_nAnnouncements, res.getAnnouncements().size());
+
+            messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, _nAnnouncements, _nonce + 2, _rid + 1, _clientStub);
+            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+            res = _forum.doRead(_pubKey1, _pubKey1, _nAnnouncements, _rid + 1, _clientStub, _signatureRead);
+            assertFalse(res.verify(_serverKey, _nonce + 5, _rid + 1));
+            assertEquals(SECURITY_ERROR, res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void readIntegrityTest() {
+        try {
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _wts, _rank);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+            _forum.doPost(_pubKey1, _message, _quotedAnnouncements, _wts, _rank, _signaturePost);
+
+            byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, _nAnnouncements, _nonce + 2, _rid, _clientStub);
+            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+            Response res = _forum.doRead(_pubKey1, _pubKey1, 404, _rid, _clientStub, _signatureRead);
+            assertFalse(res.verify(_serverKey, _nonce + 3, _rid));
+            assertEquals(SECURITY_ERROR, res.getException().getMessage());
+        } catch (IllegalArgumentException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void readRejectAttackTest() {
+        byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _wts, _rank);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+        _forum.doPost(_pubKey1, _message, _quotedAnnouncements, _wts, _rank, _signaturePost);
+
+        byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, _nAnnouncements + 1, _nonce + 2, _rid, _clientStub);
+        _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+        Response res = _forum.doRead(_pubKey1, _pubKey1, _nAnnouncements + 1, _rid, _clientStub, _signatureRead);
+        assertFalse(res.verify(_serverKey, _nonce + 3, _rid));
+        assertEquals(READ_N_ERROR, res.getException().getMessage());
+
+        messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, _nAnnouncements, _nonce + 4, _rid + 1, _clientStub);
+        _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
+
+        Response res2 = _forum.doRead(_pubKey1, _pubKey1, _nAnnouncements, _rid + 1, _clientStub, _signatureRead);
+        assertTrue(res2.verify(_serverKey, _nonce + 5, _rid + 1));
+        assertEquals(_nAnnouncements, res2.getAnnouncements().size());
+
+        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 5, _rid + 1));
+    }
 
     @Test
     public void postGeneralReplayAttackTest() {
@@ -339,6 +367,7 @@ public class ForumSecurityTests {
         assertTrue(res2.verify(_serverKey, _nonce + 5, _rid + 2));
         assertEquals(_nAnnouncements, res2.getAnnouncements().size());
 
+        // Attacker gets the invalid request's response and sends it to user when he tries to do another valid request
         assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 5, _rid + 2));
     }
 
