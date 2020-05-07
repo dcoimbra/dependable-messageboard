@@ -120,7 +120,7 @@ public class Client implements ClientCallbackInterface {
                         break;
 
                     case 5: // readGeneral
-                        nAnnouncement = requestInt("Enter the number of announcements to read:");
+                        nAnnouncement = requestInt("\nEnter the number of announcements to read:");
 
                         response = readGeneral(threads, nAnnouncement);
                         System.out.println(response);
@@ -131,11 +131,11 @@ public class Client implements ClientCallbackInterface {
                         return;
 
                     default:
-                        System.out.println("ERROR. Must be between 1 and 6");
+                        System.out.println("ERROR! Command must be between 1 and 6!");
                         break;
                 }
             } catch (NumberFormatException e) {
-                System.out.println("ERROR. Must be integer.");
+                System.out.println("ERROR! Command must be a number between 1 and 6!");
             } catch (InterruptedException e) {
                 System.out.println("Thread interrupted.");
             } catch (Exception e) {
@@ -171,7 +171,6 @@ public class Client implements ClientCallbackInterface {
         }
 
         System.out.println("\nVerifying post....");
-
         if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
             return WRITE_RESPONSE;
         } else {

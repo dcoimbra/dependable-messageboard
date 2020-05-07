@@ -43,30 +43,30 @@ public class ForumTests {
     private byte[] _signatureReadGeneralTooHigh;
     private byte[] _signatureReadGeneralNegative;
 
-//    @BeforeAll
-//    public static void generate() {
-//       try {
-//           KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-//
-//           SecureRandom random1 = SecureRandom.getInstance("SHA1PRNG");
-//           SecureRandom random2 = SecureRandom.getInstance("SHA1PRNG");
-//
-//           generator.initialize(2048, random1);
-//
-//           KeyPair pair1 = generator.generateKeyPair();
-//           _pubKey1 = pair1.getPublic();
-//           _privKey1 = pair1.getPrivate();
-//
-//           generator.initialize(2048, random2);
-//
-//           KeyPair pair2 = generator.generateKeyPair();
-//           _pubKey2 = pair2.getPublic();
-//           _privKey2 = pair2.getPrivate();
-//       } catch (NoSuchAlgorithmException e) {
-//           fail();
-//       }
-//    }
-//
+    @BeforeAll
+    public static void generate() {
+       try {
+           KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+
+           SecureRandom random1 = SecureRandom.getInstance("SHA1PRNG");
+           SecureRandom random2 = SecureRandom.getInstance("SHA1PRNG");
+
+           generator.initialize(2048, random1);
+
+           KeyPair pair1 = generator.generateKeyPair();
+           _pubKey1 = pair1.getPublic();
+           _privKey1 = pair1.getPrivate();
+
+           generator.initialize(2048, random2);
+
+           KeyPair pair2 = generator.generateKeyPair();
+           _pubKey2 = pair2.getPublic();
+           _privKey2 = pair2.getPrivate();
+       } catch (NoSuchAlgorithmException e) {
+           fail();
+       }
+    }
+
 //    @BeforeEach
 //    public void setUp() {
 //        try {

@@ -66,17 +66,8 @@ public class ForumSecurityTests {
     @BeforeEach
     public void setUp() {
         try {
-            _forumList = new ArrayList<>();
-
-            for(int i = 0; i < 4; i++) {
-                Forum forum = new Forum("server");
-                _forumList.add(forum);
-                _forum = forum;
-            }
-
-            for(Forum forum : _forumList) {
-                forum.register(_pubKey1);
-            }
+            _forum = new Forum("server");
+            _forum.register(_pubKey1);
 
             _message = "ola";
             _quotedAnnouncements = new ArrayList<>();
