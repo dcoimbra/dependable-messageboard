@@ -30,18 +30,6 @@ public class EchoMessagePostGeneral extends EchoMessage {
         sign(privKey);
     }
 
-    public EchoMessagePostGeneral(EchoMessagePostGeneral message, int id, PrivateKey privKey, int nonce) {
-        super(message, id, nonce);
-        _message = message.getMessage();
-        _quotedAnnouncements = message.getQuotedAnnouncements();
-        _rid = message.getRid();
-        _wts = message.getRid();
-        _rank = message.getRank();
-        _requestSignature = message.getRequestSignature();
-        _announcementSignature = message.getAnnouncementSignature();
-        sign(privKey);
-    }
-
 
     @Override
     public boolean equals(Object o) {

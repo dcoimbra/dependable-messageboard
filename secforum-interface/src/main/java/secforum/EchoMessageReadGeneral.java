@@ -19,14 +19,6 @@ public class EchoMessageReadGeneral extends EchoMessage {
         sign(privKey);
     }
 
-    public EchoMessageReadGeneral(EchoMessageReadGeneral message, int id, PrivateKey privKey, int nonce) {
-        super(message, id, nonce);
-        _number = message.getNumber();
-        _rid = message.getRid();
-        _requestSignature = message.getRequestSignature();
-        sign(privKey);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
