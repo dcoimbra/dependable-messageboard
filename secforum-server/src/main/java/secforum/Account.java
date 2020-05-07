@@ -63,7 +63,7 @@ public class Account implements Serializable {
     }
 
     public synchronized void post(String message, List<Announcement> a, byte[] signature, int wts, int rank) throws RemoteException {
-        if (wts > _ts) {
+        if (wts == _ts + 1) {
             setTs(wts);
             _announcementsBoard.post(_pubKey, message, a, _nonce, signature, _counter, wts, rank);
             _counter++;
@@ -98,7 +98,6 @@ public class Account implements Serializable {
 
             for (Thread t : threads) {
                 t.join();
-                System.out.println("Thread joined.");
             }
 
             System.out.println("Waiting for echo quorum...");
@@ -122,7 +121,6 @@ public class Account implements Serializable {
 
             for (Thread t : threads) {
                 t.join();
-                System.out.println("Thread joined.");
             }
 
             System.out.println("Waiting for ready quorum...");
@@ -147,8 +145,8 @@ public class Account implements Serializable {
     }
 
     public void echo(EchoMessage message, PublicKey publicKey) {
-        System.out.println("Got an echo.");
         if (message.verify(publicKey, message.serialize())) {
+            System.out.println("(echo) Verified.");
             addEcho(message, _echos, _echoLatch);
         } else {
             System.out.println("(echo) Not verified");
@@ -156,17 +154,13 @@ public class Account implements Serializable {
     }
 
     static void addEcho(EchoMessage message, List<EchoMessage> echos, CountDownLatch echoLatch) {
-        System.out.println("(echo) Verified.");
-        System.out.println("I have " + echos.size() + " echos.");
-        System.out.println("Echo latch count is " + echoLatch.getCount());
         echos.add(message);
         echoLatch.countDown();
-        System.out.println("Echo latch count is " + echoLatch.getCount());
     }
 
     public void ready(EchoMessage message, PublicKey publicKey) {
-        System.out.println("Someone is ready.");
         if (message.verify(publicKey, message.serialize())) {
+            System.out.println("(ready) Verified.");
             addReady(message, _readys, _readyLatch);
         } else {
             System.out.println("(ready) Not verified");
@@ -174,11 +168,7 @@ public class Account implements Serializable {
     }
 
     static void addReady(EchoMessage message, List<EchoMessage> readys, CountDownLatch readyLatch) {
-        System.out.println("(ready) Verified.");
-        System.out.println("Ready latch count is " + readyLatch.getCount());
         readys.add(message);
         readyLatch.countDown();
-        System.out.println("Ready latch count is " + readyLatch.getCount());
-        System.out.println("I have " + readys.size() + " readys.");
     }
 }

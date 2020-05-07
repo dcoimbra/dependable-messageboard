@@ -250,7 +250,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         Response res;
 
-        if (ts > _ts || (ts == _ts && rank > _rank)) {
+        if (ts == _ts + 1 || (ts == _ts && rank > _rank)) {
             try {
                 byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), rid, ts, rank);
                 if (!SigningSHA256_RSA.verify(messageBytes, requestSignature, pubKey)) {
@@ -545,7 +545,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         System.out.println("Waiting for echo quorum...");
@@ -569,7 +568,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         System.out.println("Waiting for ready quorum...");
@@ -600,8 +598,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return;
         }
 
-        System.out.println("Got an echo.");
         if (message.verify(loadPublicKey(), message.serialize())) {
+            System.out.println("(echo) Verified");
             Account.addEcho(message, _echos, _echoLatch);
         } else {
             System.out.println("(echo) Not verified");
@@ -617,8 +615,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return;
         }
 
-        System.out.println("Someone is ready.");
         if (message.verify(loadPublicKey(), message.serialize())) {
+            System.out.println("(ready) Verified");
             Account.addReady(message, _readys, _readyLatch);
         } else {
             System.out.println("(ready) Not verified");
