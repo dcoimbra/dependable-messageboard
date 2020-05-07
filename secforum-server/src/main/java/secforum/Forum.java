@@ -74,6 +74,39 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         _otherServers = otherServers;
     }
 
+    public Response switchOp(EchoMessage delivered) throws IllegalArgumentException {
+        switch (delivered.getOp()) {
+            case "register":
+                EchoMessageRegister registerMessage = (EchoMessageRegister) delivered;
+                return doRegister(registerMessage.getPubKey());
+
+            case "post":
+                EchoMessagePost postMessage = (EchoMessagePost) delivered;
+                return doPost(postMessage.getPubKey(), postMessage.getMessage(), postMessage.getQuotedAnnouncements(),
+                        postMessage.getWts(), postMessage.getRank(), postMessage.getRequestSignature());
+
+            case "postGeneral":
+                EchoMessagePostGeneral postGeneralMessage = (EchoMessagePostGeneral) delivered;
+                return doPostGeneral(postGeneralMessage.getPubKey(), postGeneralMessage.getMessage(),
+                        postGeneralMessage.getQuotedAnnouncements(), postGeneralMessage.getRid(), postGeneralMessage.getWts(),
+                        postGeneralMessage.getRank(), postGeneralMessage.getRequestSignature(),
+                        postGeneralMessage.getAnnouncementSignature());
+
+            case "read":
+                EchoMessageRead readMessage = (EchoMessageRead) delivered;
+                return doRead(readMessage.getPubKey(), readMessage.getTargetKey(), readMessage.getNumber(),
+                        readMessage.getRid(), readMessage.getClientStub(), readMessage.getRequestSignature());
+
+            case "readGeneral":
+                EchoMessageReadGeneral readGeneralMessage = (EchoMessageReadGeneral) delivered;
+                return doReadGeneral(readGeneralMessage.getPubKey(), readGeneralMessage.getNumber(),
+                        readGeneralMessage.getRid(), readGeneralMessage.getRequestSignature());
+
+            default:
+                throw new IllegalArgumentException("Unknown operation.");
+        }
+    }
+
     public Response getNonce(PublicKey pubKey) {
         if(!verifyRegistered(pubKey)){
             return new NonceResponse(_privKey, _accounts.get(pubKey).getNonce());
@@ -91,17 +124,17 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         EchoMessage echoMessage = new EchoMessageRegister(pubKey, _privKey);
 
         Response res;
-        EchoMessageRegister delivered = null;
+        EchoMessage delivered = null;
 
         try {
-            delivered = (EchoMessageRegister) byzantineReliableBroadcast(echoMessage);
+            delivered = byzantineReliableBroadcast(echoMessage);
         } catch (InterruptedException | RemoteException e) {
             _delivered = false;
         }
 
         if (_delivered) {
             _delivered = false;
-            return doRegister(delivered.getPubKey());
+            return switchOp(delivered);
         }
         res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, 0,-1);
         return res;
@@ -143,18 +176,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
                 return _notClient;
             }
 
-        Response res;
-
-        EchoMessagePost readyMessage = (EchoMessagePost) account.byzantineReliableBroadcast(echoMessage, _otherServers);
-
-        if (readyMessage != null) {
-            return doPost(readyMessage.getPubKey(), readyMessage.getMessage(), readyMessage.getQuotedAnnouncements(),
-                    readyMessage.getWts(), readyMessage.getRank(), readyMessage.getRequestSignature());
-        }
-
-        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), wts);
-        account.setNonce();
-        return res;
+        return executeOp(wts, account, echoMessage);
     }
 
     public Response doPost(PublicKey pubKey, String message, List<String> a, int wts, int rank, byte[] signature) {
@@ -216,20 +238,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         EchoMessage echoMessage = new EchoMessagePostGeneral(pubKey, message, a, rid, ts, rank, requestSignature,
                 announcementSignature, _privKey);
 
-        Response res;
-
-        EchoMessagePostGeneral delivered = (EchoMessagePostGeneral) account.byzantineReliableBroadcast(echoMessage,
-                _otherServers);
-
-        if (delivered != null) {
-            return doPostGeneral(delivered.getPubKey(), delivered.getMessage(), delivered.getQuotedAnnouncements(),
-                    delivered.getRid(), delivered.getWts(), delivered.getRank(), delivered.getRequestSignature(),
-                    delivered.getAnnouncementSignature());
-        }
-
-        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, account.getNonce(), rid);
-        account.setNonce();
-        return res;
+        return executeOp(rid, account, echoMessage);
     }
 
     public Response doPostGeneral(PublicKey pubKey, String message, List<String> a, int rid, int ts,
@@ -241,7 +250,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         Response res;
 
-        if (ts > _ts || (ts == _ts && rank > _rank)) {
+        if (ts == _ts + 1 || (ts == _ts && rank > _rank)) {
             try {
                 byte[] messageBytes = Utils.serializeMessage(pubKey, message, a, account.getNonce(), rid, ts, rank);
                 if (!SigningSHA256_RSA.verify(messageBytes, requestSignature, pubKey)) {
@@ -289,16 +298,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         EchoMessage echoMessage = new EchoMessageRead(senderPubKey, pubKey, number, rid, clientStub, signature, _privKey);
 
-        Response res;
-        EchoMessageRead delivered = (EchoMessageRead) senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
-
-        if (delivered != null) {
-            return doRead(delivered.getPubKey(), delivered.getTargetKey(), delivered.getNumber(), delivered.getRid(),
-                    delivered.getClientStub(), delivered.getRequestSignature());
-        }
-        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
-        senderAccount.setNonce();
-        return res;
+        return executeOp(rid, senderAccount, echoMessage);
     }
 
     public Response doRead(PublicKey senderPubKey, PublicKey pubKey, int number, int rid, Remote clientStub, byte[] signature) {
@@ -364,13 +364,16 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         EchoMessage echoMessage = new EchoMessageReadGeneral(senderPubKey, number, rid, signature, _privKey);
 
+        return executeOp(rid, senderAccount, echoMessage);
+    }
+
+    private Response executeOp(int rid, Account senderAccount, EchoMessage echoMessage) {
         Response res;
 
-        EchoMessageReadGeneral delivered = (EchoMessageReadGeneral) senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
+        EchoMessage delivered = senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
 
         if(delivered != null) {
-            return doReadGeneral(delivered.getPubKey(), delivered.getNumber(), delivered.getRid(),
-                    delivered.getRequestSignature());
+            return switchOp(delivered);
         }
         res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
         senderAccount.setNonce();
@@ -542,7 +545,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         System.out.println("Waiting for echo quorum...");
@@ -566,7 +568,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         for (Thread t : threads) {
             t.join();
-            System.out.println("Thread joined.");
         }
 
         System.out.println("Waiting for ready quorum...");
@@ -597,8 +598,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return;
         }
 
-        System.out.println("Got an echo.");
         if (message.verify(loadPublicKey(), message.serialize())) {
+            System.out.println("(echo) Verified");
             Account.addEcho(message, _echos, _echoLatch);
         } else {
             System.out.println("(echo) Not verified");
@@ -614,8 +615,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return;
         }
 
-        System.out.println("Someone is ready.");
         if (message.verify(loadPublicKey(), message.serialize())) {
+            System.out.println("(ready) Verified");
             Account.addReady(message, _readys, _readyLatch);
         } else {
             System.out.println("(ready) Not verified");

@@ -151,7 +151,10 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join();
+            t.join(10000);
+            if (t.isAlive()) {
+                t.interrupt();
+            }
         }
     }
 
@@ -167,7 +170,10 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join();
+            t.join(10000);
+            if (t.isAlive()) {
+                t.interrupt();
+            }
         }
 
         System.out.println("\nVerifying post....");
@@ -190,7 +196,10 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join();
+            t.join(10000);
+            if (t.isAlive()) {
+                t.interrupt();
+            }
         }
 
         return printAnnouncementsAtomic();
@@ -210,7 +219,10 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join();
+            t.join(10000);
+            if (t.isAlive()) {
+                t.interrupt();
+            }
         }
 
         int maxTs;
@@ -232,7 +244,10 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join();
+            t.join(10000);
+            if (t.isAlive()) {
+                t.interrupt();
+            }
         }
 
         System.out.println("\nVerifying post....");
@@ -258,7 +273,10 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join();
+            t.join(10000);
+            if (t.isAlive()) {
+                t.interrupt();
+            }
         }
 
         return printAnnouncements();
@@ -277,7 +295,10 @@ public class Client implements ClientCallbackInterface {
         }
 
         for (Thread t : threads) {
-            t.join();
+            t.join(10000);
+            if (t.isAlive()) {
+                t.interrupt();
+            }
         }
     }
 
@@ -381,7 +402,6 @@ public class Client implements ClientCallbackInterface {
                 }
             }
         }
-
         return selected;
     }
 
