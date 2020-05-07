@@ -114,14 +114,13 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
     private Response broadcastAndExecute(int id, Account senderAccount, EchoMessage echoMessage) {
-        Response res;
-
         EchoMessage delivered = senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
 
         if(delivered != null) {
             return switchOp(delivered);
         }
-        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), id);
+
+        Response res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), id);
         senderAccount.setNonce();
         return res;
     }
@@ -144,15 +143,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         EchoMessage echoMessage = new EchoMessageRegister(_id, pubKey, _privKey);
 
-        EchoMessage delivered;
-
         try {
-            delivered = byzantineReliableBroadcast(echoMessage);
+            EchoMessage delivered = byzantineReliableBroadcast(echoMessage);
+            return switchOp(delivered);
         } catch (InterruptedException | RemoteException e) {
             return new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, 0,-1);
         }
-
-        return switchOp(delivered);
     }
 
     public Response doRegister(PublicKey pubKey) {
