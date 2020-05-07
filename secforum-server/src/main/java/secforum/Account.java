@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import java.security.PublicKey;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 
 public class Account implements Serializable {
@@ -101,7 +102,7 @@ public class Account implements Serializable {
             }
 
             System.out.println("Waiting for echo quorum...");
-            _echoLatch.await();
+            _echoLatch.await(10, TimeUnit.SECONDS);
 
             EchoMessage echoMessage = Forum.compareMessages(_echos);
 
@@ -125,7 +126,7 @@ public class Account implements Serializable {
             }
 
             System.out.println("Waiting for ready quorum...");
-            _readyLatch.await();
+            _readyLatch.await(10, TimeUnit.SECONDS);
 
             EchoMessage readyMessage = Forum.compareMessages(_readys);
 

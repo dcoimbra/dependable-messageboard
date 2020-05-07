@@ -16,6 +16,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class Forum extends UnicastRemoteObject implements ForumInterface, ForumReliableBroadcastInterface, Serializable {
 
@@ -487,7 +488,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         }
 
         System.out.println("Waiting for echo quorum...");
-        _echoLatch.await();
+        _echoLatch.await(10, TimeUnit.SECONDS);
 
         EchoMessage echoMessage = compareMessages(_echos);
 
@@ -511,7 +512,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         }
 
         System.out.println("Waiting for ready quorum...");
-        _readyLatch.await();
+        _readyLatch.await(10, TimeUnit.SECONDS);
 
         EchoMessage readyMessage = compareMessages(_readys);
 
