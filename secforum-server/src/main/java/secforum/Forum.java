@@ -103,6 +103,11 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
                 return doReadGeneral(readGeneralMessage.getPubKey(), readGeneralMessage.getNumber(),
                         readGeneralMessage.getRid(), readGeneralMessage.getRequestSignature());
 
+            case "readComplete":
+                EchoMessageReadComplete readCompleteMessage = (EchoMessageReadComplete) delivered;
+                return doReadComplete(readCompleteMessage.getPubKey(), readCompleteMessage.getClientStub(),
+                        readCompleteMessage.getRid(), readCompleteMessage.getRequestSignature());
+
             default:
                 throw new IllegalArgumentException("Unknown operation.");
         }
@@ -427,7 +432,19 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         return res;
     }
 
-    public ExceptionResponse readComplete(PublicKey pubKey, Remote clientStub, int rid, byte[] signature) {
+    public Response readComplete(PublicKey pubKey, Remote clientStub, int rid, byte[] signature) {
+        Account senderAccount = _accounts.get(pubKey);
+        if(senderAccount == null) {
+            return null;
+        }
+
+        EchoMessage echoMessage = new EchoMessageReadComplete(_id, pubKey, clientStub, rid, signature, _privKey,
+                senderAccount.getMyBroadcastNonce());
+
+        return broadcastAndExecute(rid, senderAccount, echoMessage);
+    }
+
+    public Response doReadComplete(PublicKey pubKey, Remote clientStub, int rid, byte[] signature) {
         Account senderAccount = _accounts.get(pubKey);
         if(senderAccount == null) {
             return null;

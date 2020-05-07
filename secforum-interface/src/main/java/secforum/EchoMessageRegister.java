@@ -11,11 +11,6 @@ public class EchoMessageRegister extends EchoMessage {
         sign(_privKey);
     }
 
-    public EchoMessageRegister(EchoMessage message, int id, PrivateKey _privKey) {
-        super(message, id, 0);
-        sign(_privKey);
-    }
-
     @Override
     public byte[] serialize() {
         return Utils.serializeMessage(getOp(), getPubKey(), getNonce());

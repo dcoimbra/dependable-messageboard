@@ -25,16 +25,6 @@ public class EchoMessageRead extends EchoMessage {
         sign(privKey);
     }
 
-    public EchoMessageRead(EchoMessageRead message, int id, PrivateKey privKey, int nonce) {
-        super(message, id, nonce);
-        _targetKey = message.getTargetKey();
-        _number = message.getNumber();
-        _rid = message.getRid();
-        _clientStub = message.getClientStub();
-        _requestSignature = message.getRequestSignature();
-        sign(privKey);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

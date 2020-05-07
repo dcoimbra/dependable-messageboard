@@ -109,9 +109,6 @@ public class Account implements Serializable {
     }
 
     public EchoMessage byzantineReliableBroadcast(EchoMessage message, List<ForumReliableBroadcastInterface> otherServers) {
-
-        System.out.println("Nonces at start: " + Arrays.toString(_broadcastNonces));
-
         try {
             List<Thread> threads = new ArrayList<>();
 
@@ -129,8 +126,6 @@ public class Account implements Serializable {
 
             System.out.println("Waiting for echo quorum...");
             _echoLatch.await(10, TimeUnit.SECONDS);
-
-            System.out.println("Nonces after echo: " + Arrays.toString(_broadcastNonces));
 
             EchoMessage echoMessage = Forum.compareMessages(_echos);
 
@@ -161,8 +156,6 @@ public class Account implements Serializable {
             System.out.println("Waiting for ready quorum...");
             _readyLatch.await(10, TimeUnit.SECONDS);
 
-            System.out.println("Nonces after ready: " + Arrays.toString(_broadcastNonces));
-
             EchoMessage readyMessage = Forum.compareMessages(_readys);
 
             if (readyMessage == null) {
@@ -175,17 +168,13 @@ public class Account implements Serializable {
             _echoLatch = new CountDownLatch(3);
             _readys.clear();
             _readyLatch = new CountDownLatch(3);
-            System.out.println("Nonces at end: " + Arrays.toString(_broadcastNonces));
             return readyMessage;
         } catch (RemoteException | InterruptedException e) {
-            System.out.println("Nonces at end: " + Arrays.toString(_broadcastNonces));
-
             return null;
         }
     }
 
     public void echo(EchoMessage message, PublicKey publicKey) {
-
         int id = message.getServerId();
         int serverNonce = getServerBroadcastNonce(id);
 
@@ -196,9 +185,6 @@ public class Account implements Serializable {
         } else {
             System.out.println("(echo) Not verified");
         }
-
-        System.out.println("Message nonce is " + message.getNonce());
-        System.out.println("Server nonce is " + getServerBroadcastNonce(id));
     }
 
     static void addEcho(EchoMessage message, List<EchoMessage> echos, CountDownLatch echoLatch) {
@@ -218,9 +204,6 @@ public class Account implements Serializable {
         } else {
             System.out.println("(ready) Not verified");
         }
-
-        System.out.println("Message nonce is " + message.getNonce());
-        System.out.println("Server nonce is " + getServerBroadcastNonce(id));
     }
 
     static void addReady(EchoMessage message, List<EchoMessage> readys, CountDownLatch readyLatch) {

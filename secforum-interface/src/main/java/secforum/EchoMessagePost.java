@@ -25,16 +25,6 @@ public class EchoMessagePost extends EchoMessage {
         sign(privKey);
     }
 
-    public EchoMessagePost(EchoMessagePost message, int id, PrivateKey privKey, int nonce) {
-        super(message, id, nonce);
-        _message = message.getMessage();
-        _quotedAnnouncements = message.getQuotedAnnouncements();
-        _wts = message.getWts();
-        _rank = getRank();
-        _requestSignature = message.getRequestSignature();
-        sign(privKey);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
