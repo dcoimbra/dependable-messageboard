@@ -22,7 +22,8 @@ public class PostRequest implements Runnable {
     private final ByzantineAtomicRegister _atomicRegister;
 
     public PostRequest(ForumInterface forum, PrivateKey privateKey, PublicKey publicKey, PublicKey serverKey,
-                       String message, List<String> quotedAnnouncements, int wts, int rank, ByzantineAtomicRegister atomicRegister) {
+                       String message, List<String> quotedAnnouncements, int wts, int rank,
+                       ByzantineAtomicRegister atomicRegister) {
         _forum = forum;
         _privateKey = privateKey;
         _publicKey = publicKey;

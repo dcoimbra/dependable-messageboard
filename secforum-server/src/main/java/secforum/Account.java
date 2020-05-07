@@ -85,7 +85,7 @@ public class Account implements Serializable {
         _listeners.remove(listener);
     }
 
-    public boolean byzantineReliableBroadcast(EchoMessage message, List<ForumReliableBroadcastInterface> otherServers) {
+    public EchoMessage byzantineReliableBroadcast(EchoMessage message, List<ForumReliableBroadcastInterface> otherServers) {
 
         try {
             List<Thread> threads = new ArrayList<>();
@@ -140,9 +140,9 @@ public class Account implements Serializable {
             _echoLatch = new CountDownLatch(3);
             _readys.clear();
             _readyLatch = new CountDownLatch(3);
-            return true;
+            return readyMessage;
         } catch (RemoteException | InterruptedException e) {
-            return false;
+            return null;
         }
     }
 

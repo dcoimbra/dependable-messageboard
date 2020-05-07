@@ -11,13 +11,17 @@ public class EchoMessagePost extends EchoMessage {
     private final String _message;
     private final List<String> _quotedAnnouncements;
     private final int _wts;
+    private final int _rank;
+    private final byte[] _requestSignature;
 
-    public EchoMessagePost(PublicKey pubKey, String message, List<String> quotedAnnouncements, int wts,
-                           PrivateKey _privKey) {
+    public EchoMessagePost(PublicKey pubKey, String message, List<String> quotedAnnouncements, int wts, int rank,
+                           byte[] requestSignature, PrivateKey _privKey) {
         super("post", pubKey);
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
         _wts = wts;
+        _rank = rank;
+        _requestSignature = requestSignature;
         sign(_privKey);
     }
 
@@ -28,12 +32,33 @@ public class EchoMessagePost extends EchoMessage {
         if (!super.equals(o)) return false;
         EchoMessagePost that = (EchoMessagePost) o;
         return _wts == that._wts &&
+                _rank == that._rank &&
                 _message.equals(that._message) &&
                 _quotedAnnouncements.equals(that._quotedAnnouncements);
     }
 
     @Override
     public byte[] serialize() {
-        return Utils.serializeMessage(getOp(), getPubKey(), _message, _quotedAnnouncements, _wts);
+        return Utils.serializeMessage(getOp(), getPubKey(), _message, _quotedAnnouncements, _wts, _rank);
+    }
+
+    public String getMessage() {
+        return _message;
+    }
+
+    public List<String> getQuotedAnnouncements() {
+        return _quotedAnnouncements;
+    }
+
+    public int getWts() {
+        return _wts;
+    }
+
+    public int getRank() {
+        return _rank;
+    }
+
+    public byte[] getRequestSignature() {
+        return _requestSignature;
     }
 }

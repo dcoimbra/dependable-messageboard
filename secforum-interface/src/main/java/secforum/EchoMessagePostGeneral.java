@@ -13,15 +13,19 @@ public class EchoMessagePostGeneral extends EchoMessage {
     private final int _rid;
     private final int _wts;
     private final int _rank;
+    private final byte[] _requestSignature;
+    private final byte[] _announcementSignature;
 
     public EchoMessagePostGeneral(PublicKey pubKey, String message, List<String> quotedAnnouncements, int rid, int wts,
-                                  int rank, PrivateKey _privKey) {
+                                  int rank, byte[] requestSignature, byte[] announcementSignature, PrivateKey _privKey) {
         super("postGeneral", pubKey);
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
         _rid = rid;
         _wts = wts;
         _rank = rank;
+        _requestSignature = requestSignature;
+        _announcementSignature = announcementSignature;
         sign(_privKey);
     }
 
@@ -41,5 +45,33 @@ public class EchoMessagePostGeneral extends EchoMessage {
     @Override
     public byte[] serialize() {
         return Utils.serializeMessage(getOp(), getPubKey(), _message, _quotedAnnouncements, _rid, _wts, _rank);
+    }
+
+    public String getMessage() {
+        return _message;
+    }
+
+    public List<String> getQuotedAnnouncements() {
+        return _quotedAnnouncements;
+    }
+
+    public int getRid() {
+        return _rid;
+    }
+
+    public int getWts() {
+        return _wts;
+    }
+
+    public int getRank() {
+        return _rank;
+    }
+
+    public byte[] getRequestSignature() {
+        return _requestSignature;
+    }
+
+    public byte[] getAnnouncementSignature() {
+        return _announcementSignature;
     }
 }

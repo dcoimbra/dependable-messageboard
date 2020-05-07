@@ -18,7 +18,6 @@ public class RegisterRequest  implements Runnable {
 
     @Override
     public void run() {
-
         try {
             Response res = _forum.register(_publicKey);
             res.verify(_serverKey, 0, -1);
