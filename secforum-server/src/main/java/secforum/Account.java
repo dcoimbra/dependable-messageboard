@@ -2,6 +2,7 @@ package secforum;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -10,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Account implements Serializable {
 
+    private final int _id;
     private final PublicKey _pubKey;
     private final Board _announcementsBoard;
     private int _counter;
@@ -20,8 +22,11 @@ public class Account implements Serializable {
     private final List<EchoMessage> _echos;
     private transient CountDownLatch _readyLatch;
     private final List<EchoMessage> _readys;
+    private final int[] _broadcastNonces;
+    private final PrivateKey _privKey;
 
-    public Account(PublicKey pubKey) {
+    public Account(PublicKey pubKey, int id, PrivateKey privKey) {
+        _id = id;
         _pubKey = pubKey;
         _announcementsBoard = new Board();
         _counter = 0;
@@ -32,10 +37,28 @@ public class Account implements Serializable {
         _readyLatch = new CountDownLatch(3);
         _echos = new Vector<>();
         _readys = new Vector<>();
+        _broadcastNonces = new int[]{0, 0, 0, 0};
+        _privKey = privKey;
     }
 
     protected Map<ClientCallbackInterface, int[]> getListeners() {
         return _listeners;
+    }
+
+    public int getServerBroadcastNonce(int i) {
+        return _broadcastNonces[i];
+    }
+
+    public void setServerBroadcastNonce(int i, int nonce) {
+        _broadcastNonces[i] = nonce;
+    }
+
+    public void incMyBroadcastNonce() {
+        _broadcastNonces[_id]++;
+    }
+
+    public int getMyBroadcastNonce() {
+        return _broadcastNonces[_id];
     }
 
     public void setTs(int wts) {
@@ -87,6 +110,8 @@ public class Account implements Serializable {
 
     public EchoMessage byzantineReliableBroadcast(EchoMessage message, List<ForumReliableBroadcastInterface> otherServers) {
 
+        System.out.println("Nonces at start: " + Arrays.toString(_broadcastNonces));
+
         try {
             List<Thread> threads = new ArrayList<>();
 
@@ -100,8 +125,12 @@ public class Account implements Serializable {
                 t.join();
             }
 
+            incMyBroadcastNonce();
+
             System.out.println("Waiting for echo quorum...");
             _echoLatch.await(10, TimeUnit.SECONDS);
+
+            System.out.println("Nonces after echo: " + Arrays.toString(_broadcastNonces));
 
             EchoMessage echoMessage = Forum.compareMessages(_echos);
 
@@ -111,6 +140,10 @@ public class Account implements Serializable {
             }
 
             System.out.println("Echo quorum. Ready.");
+
+            echoMessage.setServerId(_id);
+            echoMessage.setNonce(getMyBroadcastNonce());
+            echoMessage.sign(_privKey);
 
             threads = new ArrayList<>();
 
@@ -123,8 +156,12 @@ public class Account implements Serializable {
                 t.join();
             }
 
+            incMyBroadcastNonce();
+
             System.out.println("Waiting for ready quorum...");
             _readyLatch.await(10, TimeUnit.SECONDS);
+
+            System.out.println("Nonces after ready: " + Arrays.toString(_broadcastNonces));
 
             EchoMessage readyMessage = Forum.compareMessages(_readys);
 
@@ -138,19 +175,30 @@ public class Account implements Serializable {
             _echoLatch = new CountDownLatch(3);
             _readys.clear();
             _readyLatch = new CountDownLatch(3);
+            System.out.println("Nonces at end: " + Arrays.toString(_broadcastNonces));
             return readyMessage;
         } catch (RemoteException | InterruptedException e) {
+            System.out.println("Nonces at end: " + Arrays.toString(_broadcastNonces));
+
             return null;
         }
     }
 
     public void echo(EchoMessage message, PublicKey publicKey) {
-        if (message.verify(publicKey, message.serialize())) {
+
+        int id = message.getServerId();
+        int serverNonce = getServerBroadcastNonce(id);
+
+        if (message.verify(publicKey, message.serialize()) && (message.getNonce() > serverNonce)) {
             System.out.println("(echo) Verified.");
             addEcho(message, _echos, _echoLatch);
+            setServerBroadcastNonce(id, message.getNonce());
         } else {
             System.out.println("(echo) Not verified");
         }
+
+        System.out.println("Message nonce is " + message.getNonce());
+        System.out.println("Server nonce is " + getServerBroadcastNonce(id));
     }
 
     static void addEcho(EchoMessage message, List<EchoMessage> echos, CountDownLatch echoLatch) {
@@ -159,12 +207,20 @@ public class Account implements Serializable {
     }
 
     public void ready(EchoMessage message, PublicKey publicKey) {
-        if (message.verify(publicKey, message.serialize())) {
+
+        int id = message.getServerId();
+        int serverNonce = getServerBroadcastNonce(id);
+
+        if (message.verify(publicKey, message.serialize()) && (message.getNonce() > serverNonce)) {
             System.out.println("(ready) Verified.");
             addReady(message, _readys, _readyLatch);
+            setServerBroadcastNonce(id, message.getNonce());
         } else {
             System.out.println("(ready) Not verified");
         }
+
+        System.out.println("Message nonce is " + message.getNonce());
+        System.out.println("Server nonce is " + getServerBroadcastNonce(id));
     }
 
     static void addReady(EchoMessage message, List<EchoMessage> readys, CountDownLatch readyLatch) {

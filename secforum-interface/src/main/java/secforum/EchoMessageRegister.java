@@ -6,13 +6,18 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 public class EchoMessageRegister extends EchoMessage {
-    public EchoMessageRegister(PublicKey pubKey, PrivateKey _privKey) {
-        super("register", pubKey);
+    public EchoMessageRegister(int serverId, PublicKey pubKey, PrivateKey _privKey) {
+        super(serverId,"register", pubKey, 0);
+        sign(_privKey);
+    }
+
+    public EchoMessageRegister(EchoMessage message, int id, PrivateKey _privKey) {
+        super(message, id, 0);
         sign(_privKey);
     }
 
     @Override
     public byte[] serialize() {
-        return Utils.serializeMessage(getOp(), getPubKey());
+        return Utils.serializeMessage(getOp(), getPubKey(), getNonce());
     }
 }

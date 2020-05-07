@@ -10,12 +10,21 @@ public class EchoMessageReadGeneral extends EchoMessage {
     private final int _rid;
     private final byte[] _requestSignature;
 
-    public EchoMessageReadGeneral(PublicKey pubKey, int number, int rid, byte[] requestSignature, PrivateKey _privKey) {
-        super("readGeneral", pubKey);
+    public EchoMessageReadGeneral(int serverId, PublicKey pubKey, int number, int rid, byte[] requestSignature,
+                                  PrivateKey privKey, int nonce) {
+        super(serverId, "readGeneral", pubKey, nonce);
         _number = number;
         _rid = rid;
         _requestSignature = requestSignature;
-        sign(_privKey);
+        sign(privKey);
+    }
+
+    public EchoMessageReadGeneral(EchoMessageReadGeneral message, int id, PrivateKey privKey, int nonce) {
+        super(message, id, nonce);
+        _number = message.getNumber();
+        _rid = message.getRid();
+        _requestSignature = message.getRequestSignature();
+        sign(privKey);
     }
 
     @Override
@@ -30,7 +39,7 @@ public class EchoMessageReadGeneral extends EchoMessage {
 
     @Override
     public byte[] serialize() {
-        return Utils.serializeMessage(getOp(), getPubKey(), _number, _rid);
+        return Utils.serializeMessage(getOp(), getPubKey(), _number, _rid, getNonce());
     }
 
     public int getNumber() {
