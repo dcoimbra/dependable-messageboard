@@ -20,12 +20,15 @@ public class ForumSecurityTests {
     private static PublicKey _pubKey1;
     private static PrivateKey _privKey1;
     private static PublicKey _pubKey2;
+    private static PublicKey _serverKey;
     private static Integer _nonce;
 
     private static final String NOT_REGISTERED = "\nRequest error! User is not registered!";
     private static final String SECURITY_ERROR = "\nSecurity error! Message was altered!";
+    private static final String QUOTE_ERROR = "\nRequest error! Announcement a does not exist!";
 
-    private ArrayList<Forum> _forumList;
+    private static final String POST_RESPONSE = "Successfully uploaded the post.";
+
     private Forum _forum;
     private String _message;
     private List<String> _quotedAnnouncements;
@@ -49,13 +52,11 @@ public class ForumSecurityTests {
             SecureRandom random2 = SecureRandom.getInstance("SHA1PRNG");
 
             generator.initialize(2048, random1);
-
             KeyPair pair1 = generator.generateKeyPair();
             _pubKey1 = pair1.getPublic();
             _privKey1 = pair1.getPrivate();
 
             generator.initialize(2048, random2);
-
             KeyPair pair2 = generator.generateKeyPair();
             _pubKey2 = pair2.getPublic();
         } catch (NoSuchAlgorithmException e) {
@@ -67,130 +68,104 @@ public class ForumSecurityTests {
     public void setUp() {
         try {
             _forum = new Forum("server");
-            _forum.register(_pubKey1);
+            _serverKey = _forum.loadPublicKey();
+            _forum.doRegister(_pubKey1);
 
             _message = "ola";
             _quotedAnnouncements = new ArrayList<>();
             _wrongQuotedAnnouncements = new ArrayList<>();
             _wrongQuotedAnnouncements.add("a");
 
-            _wts = 0;
+            _wts = 1;
             _rank = 1;
-            _rid = 0;
+            _rid = 1;
         } catch (IOException e) {
             fail();
         }
     }
 
-//    @Test
-//    public void getNonceSignatureTest() {
-//        Response res = _forum.getNonce(_pubKey1);;
-//
-//        try{
-//            Integer nonce = res.verifyNonce(_forumList.get(0).loadPublicKey());
-//            assertEquals(1, nonce);
-//        } catch (IllegalArgumentException iae) {
-//            System.out.println(iae.getMessage());
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void getNonceNotRegistered() {
-//         Response res = _forum.getNonce(_pubKey2);
-//         assertEquals(NOT_REGISTERED, res.getException().getMessage());
-//    }
-//
-//    @Test
-//    public void postReplayAttackTest() {
-//        try {
-//            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _wts, _rank);
-//            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//
-//            _forum.post(_pubKey1, _message, new ArrayList<>(), _wts, _rank, _signaturePost);
-//            Response res = _forum.post(_pubKey1, _message, new ArrayList<>(), _wts, _rank, _signaturePost);
-//
-//            assertEquals(SECURITY_ERROR, res.getException().getMessage());
-//        } catch (IllegalArgumentException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void postGeneralReplayAttackTest() {
-//        try {
-//            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid, _wts, _rank);
-//            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//
-//            byte[] announcementBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid, _wts, _rank);
-//            _signatureAnnouncement = SigningSHA256_RSA.sign(announcementBytesPost, _privKey1);
-//
-//            _forum.postGeneral(_pubKey1, _message, new ArrayList<>(), _rid, _wts, _rank, _signaturePost, _signatureAnnouncement);
-//
-//            _wts++;
-//
-//            messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid, _wts, _rank);
-//            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//
-//            announcementBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid, _wts, _rank);
-//            _signatureAnnouncement = SigningSHA256_RSA.sign(announcementBytesPost, _privKey1);
-//
-//            Response res = _forum.postGeneral(_pubKey1, _message, new ArrayList<>(), _rid, _wts, _rank, _signaturePost, _signatureAnnouncement);
-//
-//            assertEquals(SECURITY_ERROR, res.getException().getMessage());
-//        } catch (IllegalArgumentException e) {
-//            fail();
-//        }
-//    }
-//
+    @Test
+    public void getNonceSignatureTest() {
+        Response res = _forum.getNonce(_pubKey1);;
+
+        try{
+            Integer nonce = res.verifyNonce(_forum.loadPublicKey());
+            assertEquals(1, nonce);
+        } catch (IllegalArgumentException iae) {
+            System.out.println(iae.getMessage());
+            fail();
+        }
+    }
+
+    @Test
+    public void getNonceNotRegistered() {
+         Response res = _forum.getNonce(_pubKey2);
+         assertEquals(NOT_REGISTERED, res.getException().getMessage());
+    }
+
+    @Test
+    public void postReplayAttackTest() {
+        try {
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _wts, _rank);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+            Response res = _forum.doPost(_pubKey1, _message, _quotedAnnouncements, _wts, _rank, _signaturePost);
+            assertEquals(POST_RESPONSE, res.getResponse());
+            assertTrue(res.verify(_serverKey, _nonce + 1, _wts));
+
+            messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _wts + 1, _rank);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+            res = _forum.doPost(_pubKey1, _message, _quotedAnnouncements, _wts + 1, _rank, _signaturePost);
+            assertEquals(SECURITY_ERROR, res.getException().getMessage());
+            assertFalse(res.verify(_serverKey, _nonce + 3, _wts + 1));
+        } catch (IllegalArgumentException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void postIntegrityTest() {
+        try {
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _wts, _rank);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+            Response res = _forum.doPost(_pubKey1, "attack", _quotedAnnouncements, _wts, _rank, _signaturePost);
+            assertEquals(SECURITY_ERROR, res.getException().getMessage());
+            assertFalse(res.verify(_serverKey, _nonce + 1, _wts));
+        } catch (IllegalArgumentException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void postRejectAttackTest() {
+        byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _nonce, _wts, _rank);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+        Response res = _forum.doPost(_pubKey1, _message, _wrongQuotedAnnouncements, _wts, _rank, _signaturePost);
+        assertEquals(QUOTE_ERROR, res.getException().getMessage());
+        assertFalse(res.verify(_serverKey, _nonce + 1, _wts));
+
+        messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce + 2, _wts + 1, _rank);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+
+        Response res2 = _forum.doPost(_pubKey1, _message, _quotedAnnouncements, _wts + 1, _rank, _signaturePost);
+        assertEquals(POST_RESPONSE, res2.getResponse());
+        assertTrue(res2.verify(_serverKey, _nonce + 3, _wts + 1));
+
+        // Attacker gets the invalid request's response and sends it to user when he tries to do another valid request
+        assertThrows(IllegalArgumentException.class, () -> res.verify(_serverKey, _nonce + 3, _wts + 1));
+    }
+
 //    @Test
 //    public void readReplayAttack() {
 //        try {
 //            byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce);
 //            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 //
-//            _forum.read(_pubKey1, _pubKey1, 0, _signatureRead);
-//            Response res = _forum.read(_pubKey1, _pubKey1, 0, _signatureRead);
-//
-//            assertEquals("Security error. Message was altered.", res.getException().getMessage());
-//        } catch (IllegalArgumentException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void readGeneralReplayAttack() {
-//        try {
-//            byte[] messageBytesReadGeneral = Utils.serializeMessage(_pubKey1, 0, _nonce);
-//            _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey1);
-//            _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
-//            Response res = _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
-//
-//            assertEquals("Security error. Message was altered.", res.getException().getMessage());
-//        } catch (IllegalArgumentException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void postIntegrityTest() {
-//        try {
-//            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce);
-//            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//            Response res = _forum.post(_pubKey1, "attack", new ArrayList<>(), _wts, _rank, _signaturePost);
-//
-//            assertEquals("Security error. Message was altered.", res.getException().getMessage());
-//        } catch (IllegalArgumentException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void postGeneralIntegrityTest() {
-//        try {
-//            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce);
-//            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//            Response res = _forum.postGeneral(_pubKey1, "attack", new ArrayList<>(), _signaturePost);
+//            _forum.doRead(_pubKey1, _pubKey1, 0, _signatureRead);
+//            Response res = _forum.doRead(_pubKey1, _pubKey1, 0, _signatureRead);
 //
 //            assertEquals("Security error. Message was altered.", res.getException().getMessage());
 //        } catch (IllegalArgumentException e) {
@@ -203,55 +178,12 @@ public class ForumSecurityTests {
 //        try {
 //            byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce);
 //            _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
-//            Response res = _forum.read(_pubKey1, _pubKey1, 404, _signatureRead);
+//            Response res = _forum.doRead(_pubKey1, _pubKey1, 404, _signatureRead);
 //
 //            assertEquals("Security error. Message was altered.", res.getException().getMessage());
 //        } catch (IllegalArgumentException e) {
 //            fail();
 //        }
-//    }
-//
-//    @Test
-//    public void readGeneralIntegrityTest() {
-//        try {
-//            byte[] messageBytesReadGeneral = Utils.serializeMessage(_pubKey1, 0, _nonce);
-//            _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey1);
-//            Response res = _forum.readGeneral(_pubKey1, 404, _signatureReadGeneral);
-//
-//            assertEquals("Security error. Message was altered.", res.getException().getMessage());
-//        } catch (IllegalArgumentException e) {
-//            fail();
-//        }
-//    }
-//
-//    @Test
-//    public void postRejectAttackTest() {
-//        byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _nonce);
-//        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//
-//        Response res = _forum.post(_pubKey1, _message, _wrongQuotedAnnouncements, _wts, _rank, _signaturePost);
-//
-//        messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce + 1);
-//        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//
-//        _forum.post(_pubKey1, _message, _quotedAnnouncements, _wts, _rank, _signaturePost);
-//
-//        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
-//    }
-//
-//    @Test
-//    public void postGeneralRejectAttackTest() {
-//        byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _nonce);
-//        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//
-//        Response res = _forum.postGeneral(_pubKey1, _message, _wrongQuotedAnnouncements, _signaturePost);
-//
-//        messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce + 1);
-//        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
-//
-//        _forum.postGeneral(_pubKey1, _message, _quotedAnnouncements, _signaturePost);
-//
-//        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
 //    }
 //
 //    @Test
@@ -259,14 +191,106 @@ public class ForumSecurityTests {
 //        byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 3, _nonce);
 //        _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 //
-//        Response res = _forum.read(_pubKey1, _pubKey1, 3, _signatureRead);
+//        Response res = _forum.doRead(_pubKey1, _pubKey1, 3, _signatureRead);
 //
 //        messageBytesRead = Utils.serializeMessage(_pubKey1, _pubKey1, 0, _nonce + 1);
 //        _signatureRead = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 //
-//        _forum.read(_pubKey1, _pubKey1, 0, _signatureRead);
+//        _forum.doRead(_pubKey1, _pubKey1, 0, _signatureRead);
 //
 //        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
+//    }
+
+    @Test
+    public void postGeneralReplayAttackTest() {
+        try {
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid, _wts, _rank);
+            byte[] announcementBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid, _wts, _rank);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+            _signatureAnnouncement = SigningSHA256_RSA.sign(announcementBytesPost, _privKey1);
+
+            Response res = _forum.doPostGeneral(_pubKey1, _message, new ArrayList<>(), _rid, _wts, _rank, _signaturePost, _signatureAnnouncement);
+            assertEquals(POST_RESPONSE, res.getResponse());
+            assertTrue(res.verify(_serverKey, _nonce + 1, _rid));
+
+            messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid + 1, _wts + 1, _rank);
+            announcementBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid + 1, _wts + 1, _rank);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+            _signatureAnnouncement = SigningSHA256_RSA.sign(announcementBytesPost, _privKey1);
+
+            res = _forum.doPostGeneral(_pubKey1, _message, _quotedAnnouncements, _rid + 1, _wts + 1, _rank, _signaturePost, _signatureAnnouncement);
+            assertEquals(SECURITY_ERROR, res.getException().getMessage());
+            assertFalse(res.verify(_serverKey, _nonce + 3, _rid + 1));
+        } catch (IllegalArgumentException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void postGeneralIntegrityTest() {
+        try {
+            byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid, _wts, _rank);
+            byte[] announcementBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce, _rid, _wts, _rank);
+            _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+            _signatureAnnouncement = SigningSHA256_RSA.sign(announcementBytesPost, _privKey1);
+
+            Response res = _forum.doPostGeneral(_pubKey1, "attack", _quotedAnnouncements, _rid, _wts, _rank, _signaturePost, _signatureAnnouncement);
+            assertEquals(SECURITY_ERROR, res.getException().getMessage());
+            assertFalse(res.verify(_serverKey, _nonce + 1, _wts));
+        } catch (IllegalArgumentException e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void postGeneralRejectAttackTest() {
+        byte[] messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _nonce, _rid, _wts, _rank);
+        byte[] announcementBytesPost = Utils.serializeMessage(_pubKey1, _message, _wrongQuotedAnnouncements, _nonce, _rid, _wts, _rank);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+        _signatureAnnouncement = SigningSHA256_RSA.sign(announcementBytesPost, _privKey1);
+
+        Response res = _forum.doPostGeneral(_pubKey1, _message, _wrongQuotedAnnouncements, _rid, _wts, _rank, _signaturePost, _signatureAnnouncement);
+        assertEquals(QUOTE_ERROR, res.getException().getMessage());
+        assertFalse(res.verify(_serverKey, _nonce + 1, _wts));
+
+        messageBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce + 2, _rid + 1, _wts + 1, _rank);
+        announcementBytesPost = Utils.serializeMessage(_pubKey1, _message, _quotedAnnouncements, _nonce + 2, _rid + 1, _wts + 1, _rank);
+        _signaturePost = SigningSHA256_RSA.sign(messageBytesPost, _privKey1);
+        _signatureAnnouncement = SigningSHA256_RSA.sign(announcementBytesPost, _privKey1);
+
+        Response res2 = _forum.doPostGeneral(_pubKey1, _message, _quotedAnnouncements, _rid + 1, _wts + 1, _rank, _signaturePost, _signatureAnnouncement);
+        assertEquals(POST_RESPONSE, res2.getResponse());
+        assertTrue(res2.verify(_serverKey, _nonce + 3, _rid + 1));
+
+        // Attacker gets the invalid request's response and sends it to user when he tries to do another valid request
+        assertThrows(IllegalArgumentException.class, () -> res.verify(_serverKey, _nonce + 3, _rid + 1));
+    }
+
+//    @Test
+//    public void readGeneralReplayAttack() {
+//        try {
+//            byte[] messageBytesReadGeneral = Utils.serializeMessage(_pubKey1, 0, _nonce);
+//            _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey1);
+//            _forum.doReadGeneral(_pubKey1, 0, _signatureReadGeneral);
+//            Response res = _forum.doReadGeneral(_pubKey1, 0, _signatureReadGeneral);
+//
+//            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+//        } catch (IllegalArgumentException e) {
+//            fail();
+//        }
+//    }
+
+//    @Test
+//    public void readGeneralIntegrityTest() {
+//        try {
+//            byte[] messageBytesReadGeneral = Utils.serializeMessage(_pubKey1, 0, _nonce);
+//            _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesReadGeneral, _privKey1);
+//            Response res = _forum.doReadGeneral(_pubKey1, 404, _signatureReadGeneral);
+//
+//            assertEquals("Security error. Message was altered.", res.getException().getMessage());
+//        } catch (IllegalArgumentException e) {
+//            fail();
+//        }
 //    }
 //
 //    @Test
@@ -274,12 +298,12 @@ public class ForumSecurityTests {
 //        byte[] messageBytesRead = Utils.serializeMessage(_pubKey1, 3, _nonce);
 //        _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 //
-//        Response res = _forum.readGeneral(_pubKey1, 3, _signatureReadGeneral);
+//        Response res = _forum.doReadGeneral(_pubKey1, 3, _signatureReadGeneral);
 //
 //        messageBytesRead = Utils.serializeMessage(_pubKey1, 0, _nonce + 1);
 //        _signatureReadGeneral = SigningSHA256_RSA.sign(messageBytesRead, _privKey1);
 //
-//        _forum.readGeneral(_pubKey1, 0, _signatureReadGeneral);
+//        _forum.doReadGeneral(_pubKey1, 0, _signatureReadGeneral);
 //
 //        assertThrows(IllegalArgumentException.class, () -> res.verify(_pubKey1, _nonce + 1));
 //    }

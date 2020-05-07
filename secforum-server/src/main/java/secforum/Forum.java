@@ -475,7 +475,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             Announcement announcement = announcementExists(id);
 
             if(announcement == null) {
-                throw new RemoteException("\n Request error! Announcement " + id + " does not exist!");
+                throw new RemoteException("\nRequest error! Announcement " + id + " does not exist!");
             }
             else {
                 announcements.add(announcement);
