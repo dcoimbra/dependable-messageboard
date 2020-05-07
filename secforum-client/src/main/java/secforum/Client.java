@@ -1,14 +1,12 @@
 package secforum;
 
 import secforum.response.Response;
-import security.SigningSHA256_RSA;
 import security.Utils;
 
 import java.io.IOException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
-import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -273,6 +271,24 @@ public class Client implements ClientCallbackInterface {
         return printAnnouncements();
     }
 
+    private void readComplete() throws InterruptedException {
+        _atomicRegister.clearAnswers();
+        int rid = _atomicRegister.getRid();
+
+        List<Thread> threads = new ArrayList<>();
+
+        for (int i = 0; i < _N; i++) {
+            threads.add(new Thread(new ReadCompleteRequest(_forums.get(i), _privateKey, _publicKey, _serverKey,
+                    _clientStub, rid)));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+            System.out.println("Thread joined.");
+        }
+    }
+
     @Override
     public void writeBack(Response res) {
         try {
@@ -331,6 +347,8 @@ public class Client implements ClientCallbackInterface {
     private String printAnnouncementsAtomic() {
         try {
             Response v = bestQuorum();
+            readComplete();
+
             List<Announcement> announcements = v.getAnnouncements();
 
             System.out.println();
@@ -339,12 +357,12 @@ public class Client implements ClientCallbackInterface {
             }
 
             return "Got " + announcements.size() + " announcement(s)!";
-        } catch (IllegalArgumentException | RemoteException | NullPointerException e) {
+        } catch (IllegalArgumentException | NullPointerException | InterruptedException e) {
             throw new IllegalArgumentException(BYZANTINE_ERROR);
         }
     }
 
-    private Response bestQuorum() throws RemoteException {
+    private Response bestQuorum() {
         List<Response> answers = _atomicRegister.getAnswers();
         Response selected = null;
 
@@ -372,23 +390,7 @@ public class Client implements ClientCallbackInterface {
             }
         }
 
-        readComplete();
         return selected;
-    }
-
-    private void readComplete() throws RemoteException {
-        _atomicRegister.clearAnswers();
-        int rid = _atomicRegister.getRid();
-
-        for (ForumInterface forum : _forums) {
-            Response res = forum.getNonce(_publicKey);
-            int nonce = res.verifyNonce(_serverKey);
-
-            byte[] messageBytes = Utils.serializeMessage(_publicKey, _clientStub, nonce, rid);
-            byte[] signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
-
-            forum.readComplete(_publicKey, _clientStub, rid, signature);
-        }
     }
 
     private int requestInt(String prompt) throws NumberFormatException {
