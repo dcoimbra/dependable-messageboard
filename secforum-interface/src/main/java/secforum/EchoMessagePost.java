@@ -14,15 +14,25 @@ public class EchoMessagePost extends EchoMessage {
     private final int _rank;
     private final byte[] _requestSignature;
 
-    public EchoMessagePost(PublicKey pubKey, String message, List<String> quotedAnnouncements, int wts, int rank,
-                           byte[] requestSignature, PrivateKey _privKey) {
-        super("post", pubKey);
+    public EchoMessagePost(int serverId, PublicKey pubKey, String message, List<String> quotedAnnouncements, int wts, int rank,
+                           byte[] requestSignature, PrivateKey privKey, int nonce) {
+        super(serverId,"post", pubKey, nonce);
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
         _wts = wts;
         _rank = rank;
         _requestSignature = requestSignature;
-        sign(_privKey);
+        sign(privKey);
+    }
+
+    public EchoMessagePost(EchoMessagePost message, int id, PrivateKey privKey, int nonce) {
+        super(message, id, nonce);
+        _message = message.getMessage();
+        _quotedAnnouncements = message.getQuotedAnnouncements();
+        _wts = message.getWts();
+        _rank = getRank();
+        _requestSignature = message.getRequestSignature();
+        sign(privKey);
     }
 
     @Override
@@ -39,7 +49,8 @@ public class EchoMessagePost extends EchoMessage {
 
     @Override
     public byte[] serialize() {
-        return Utils.serializeMessage(getOp(), getPubKey(), _message, _quotedAnnouncements, _wts, _rank);
+        return Utils.serializeMessage(getServerId(), getOp(), getPubKey(), _message, _quotedAnnouncements, _wts, _rank,
+                getNonce());
     }
 
     public String getMessage() {
@@ -61,4 +72,6 @@ public class EchoMessagePost extends EchoMessage {
     public byte[] getRequestSignature() {
         return _requestSignature;
     }
+
+
 }

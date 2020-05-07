@@ -29,13 +29,13 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     private static final int _N = 3 * _f + 1;
     private int _ts;
     private int _rank;
+    private final int _id;
 
     private List<ForumReliableBroadcastInterface> _otherServers;
     private final List<EchoMessage> _echos;
     private transient CountDownLatch _echoLatch = new CountDownLatch(3);
     private final List<EchoMessage> _readys;
     private transient CountDownLatch _readyLatch = new CountDownLatch(3);
-    private boolean _delivered;
 
     private static final String POST_RESPONSE = "Successfully uploaded the post.";
     private static final String INTERNAL_ERROR = "\nInternal server error! Operation failed!";
@@ -46,11 +46,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      *
      * @throws RemoteException if there is a remote error
      */
-    public Forum(String password) throws RemoteException {
-        _delivered = false;
+    public Forum(String password, int id) throws RemoteException {
         _echos = new Vector<>();
         _readys = new Vector<>();
-
+        _id = id;
         _accounts = new HashMap<>();
         _generalBoard = new Board();
 
@@ -62,12 +61,14 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             _privKey = (PrivateKey) keystore.getKey("server", (password).toCharArray());
             _ts = 0;
             _rank = -1;
-        } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | NoSuchAlgorithmException | IOException e) {
+        } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | NoSuchAlgorithmException |
+                IOException e) {
             System.out.println("Could not load private key. SHUTTING DOWN!!!");
             System.exit(0);
         }
 
-        _notClient = new ExceptionResponse(new RemoteException("\nRequest error! User is not registered!"), _privKey, -1, -1);
+        _notClient = new ExceptionResponse(new RemoteException("\nRequest error! User is not registered!"), _privKey,
+                -1, -1);
     }
 
     public void setOtherServers(List<ForumReliableBroadcastInterface> otherServers) {
@@ -88,9 +89,9 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             case "postGeneral":
                 EchoMessagePostGeneral postGeneralMessage = (EchoMessagePostGeneral) delivered;
                 return doPostGeneral(postGeneralMessage.getPubKey(), postGeneralMessage.getMessage(),
-                        postGeneralMessage.getQuotedAnnouncements(), postGeneralMessage.getRid(), postGeneralMessage.getWts(),
-                        postGeneralMessage.getRank(), postGeneralMessage.getRequestSignature(),
-                        postGeneralMessage.getAnnouncementSignature());
+                        postGeneralMessage.getQuotedAnnouncements(), postGeneralMessage.getRid(),
+                        postGeneralMessage.getWts(), postGeneralMessage.getRank(),
+                        postGeneralMessage.getRequestSignature(), postGeneralMessage.getAnnouncementSignature());
 
             case "read":
                 EchoMessageRead readMessage = (EchoMessageRead) delivered;
@@ -107,6 +108,19 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         }
     }
 
+    private Response broadcastAndExecute(int id, Account senderAccount, EchoMessage echoMessage) {
+        Response res;
+
+        EchoMessage delivered = senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
+
+        if(delivered != null) {
+            return switchOp(delivered);
+        }
+        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), id);
+        senderAccount.setNonce();
+        return res;
+    }
+
     public Response getNonce(PublicKey pubKey) {
         if(!verifyRegistered(pubKey)){
             return new NonceResponse(_privKey, _accounts.get(pubKey).getNonce());
@@ -121,40 +135,39 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @return Response positive if successfully registered
      */
     public synchronized Response register(PublicKey pubKey) {
-        EchoMessage echoMessage = new EchoMessageRegister(pubKey, _privKey);
+        EchoMessage echoMessage = new EchoMessageRegister(_id, pubKey, _privKey);
 
-        Response res;
-        EchoMessage delivered = null;
+        EchoMessage delivered;
 
         try {
             delivered = byzantineReliableBroadcast(echoMessage);
         } catch (InterruptedException | RemoteException e) {
-            _delivered = false;
+            return new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, 0,-1);
         }
 
-        if (_delivered) {
-            _delivered = false;
-            return switchOp(delivered);
-        }
-        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, 0,-1);
-        return res;
+        return switchOp(delivered);
     }
 
     public Response doRegister(PublicKey pubKey) {
         Response res;
 
-        if (_accounts.putIfAbsent(pubKey, new Account(pubKey)) != null) {
-            res = new ExceptionResponse(new RemoteException("\nRequest error! User is already registered!"), _privKey, 0, -1);
+        if (_accounts.putIfAbsent(pubKey, new Account(pubKey, _id, _privKey)) != null) {
+            res = new ExceptionResponse(new RemoteException("\nRequest error! User is already registered!"), _privKey,
+                    0, -1);
         } else {
             System.out.println("Registered new user successfully.");
 
-            res = new WriteResponse("Registered successfully.", _privKey, _accounts.get(pubKey).getNonce(), -1);
+            _accounts.get(pubKey).incMyBroadcastNonce();
+
+            res = new WriteResponse("Registered successfully.", _privKey, _accounts.get(pubKey).getNonce(),
+                    -1);
         }
 
         try {
             ForumServer.writeForum(this);
         } catch (IOException e) {
-            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, _accounts.get(pubKey).getNonce(), -1);
+            res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, _accounts.get(pubKey).getNonce(),
+                    -1);
         }
 
         _accounts.get(pubKey).setNonce();
@@ -169,14 +182,15 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
      * @param signature signature of the sender
      */
     public Response post(PublicKey pubKey, String message, List<String> a, int wts, int rank, byte[] signature) {
-        EchoMessage echoMessage = new EchoMessagePost(pubKey, message, a, wts, rank, signature, _privKey);
-
         Account account = _accounts.get(pubKey);
             if (account == null) {
                 return _notClient;
             }
 
-        return executeOp(wts, account, echoMessage);
+        EchoMessage echoMessage = new EchoMessagePost(_id, pubKey, message, a, wts, rank, signature, _privKey,
+                account.getMyBroadcastNonce());
+
+        return broadcastAndExecute(wts, account, echoMessage);
     }
 
     public Response doPost(PublicKey pubKey, String message, List<String> a, int wts, int rank, byte[] signature) {
@@ -235,10 +249,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return _notClient;
         }
 
-        EchoMessage echoMessage = new EchoMessagePostGeneral(pubKey, message, a, rid, ts, rank, requestSignature,
-                announcementSignature, _privKey);
+        EchoMessage echoMessage = new EchoMessagePostGeneral(_id, pubKey, message, a, rid, ts, rank, requestSignature,
+                announcementSignature, _privKey, account.getMyBroadcastNonce());
 
-        return executeOp(rid, account, echoMessage);
+        return broadcastAndExecute(rid, account, echoMessage);
     }
 
     public Response doPostGeneral(PublicKey pubKey, String message, List<String> a, int rid, int ts,
@@ -296,9 +310,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return _notClient;
         }
 
-        EchoMessage echoMessage = new EchoMessageRead(senderPubKey, pubKey, number, rid, clientStub, signature, _privKey);
+        EchoMessage echoMessage = new EchoMessageRead(_id, senderPubKey, pubKey, number, rid, clientStub, signature,
+                _privKey, senderAccount.getMyBroadcastNonce());
 
-        return executeOp(rid, senderAccount, echoMessage);
+        return broadcastAndExecute(rid, senderAccount, echoMessage);
     }
 
     public Response doRead(PublicKey senderPubKey, PublicKey pubKey, int number, int rid, Remote clientStub, byte[] signature) {
@@ -362,22 +377,10 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
             return _notClient;
         }
 
-        EchoMessage echoMessage = new EchoMessageReadGeneral(senderPubKey, number, rid, signature, _privKey);
+        EchoMessage echoMessage = new EchoMessageReadGeneral(_id, senderPubKey, number, rid, signature, _privKey,
+                senderAccount.getMyBroadcastNonce());
 
-        return executeOp(rid, senderAccount, echoMessage);
-    }
-
-    private Response executeOp(int rid, Account senderAccount, EchoMessage echoMessage) {
-        Response res;
-
-        EchoMessage delivered = senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
-
-        if(delivered != null) {
-            return switchOp(delivered);
-        }
-        res = new ExceptionResponse(new RemoteException(INTERNAL_ERROR), _privKey, senderAccount.getNonce(), rid);
-        senderAccount.setNonce();
-        return res;
+        return broadcastAndExecute(rid, senderAccount, echoMessage);
     }
 
     public Response doReadGeneral(PublicKey senderPubKey, int number, int rid, byte[] signature) {
@@ -581,7 +584,6 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         }
 
         System.out.println("Ready quorum. Delivering message.");
-        _delivered = true;
         _echos.clear();
         _echoLatch = new CountDownLatch(3);
         _readys.clear();

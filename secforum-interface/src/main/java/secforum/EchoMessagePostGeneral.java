@@ -16,9 +16,10 @@ public class EchoMessagePostGeneral extends EchoMessage {
     private final byte[] _requestSignature;
     private final byte[] _announcementSignature;
 
-    public EchoMessagePostGeneral(PublicKey pubKey, String message, List<String> quotedAnnouncements, int rid, int wts,
-                                  int rank, byte[] requestSignature, byte[] announcementSignature, PrivateKey _privKey) {
-        super("postGeneral", pubKey);
+    public EchoMessagePostGeneral(int serverId, PublicKey pubKey, String message, List<String> quotedAnnouncements,
+                                  int rid, int wts, int rank, byte[] requestSignature, byte[] announcementSignature,
+                                  PrivateKey privKey, int nonce) {
+        super(serverId,"postGeneral", pubKey, nonce);
         _message = message;
         _quotedAnnouncements = quotedAnnouncements;
         _rid = rid;
@@ -26,8 +27,21 @@ public class EchoMessagePostGeneral extends EchoMessage {
         _rank = rank;
         _requestSignature = requestSignature;
         _announcementSignature = announcementSignature;
-        sign(_privKey);
+        sign(privKey);
     }
+
+    public EchoMessagePostGeneral(EchoMessagePostGeneral message, int id, PrivateKey privKey, int nonce) {
+        super(message, id, nonce);
+        _message = message.getMessage();
+        _quotedAnnouncements = message.getQuotedAnnouncements();
+        _rid = message.getRid();
+        _wts = message.getRid();
+        _rank = message.getRank();
+        _requestSignature = message.getRequestSignature();
+        _announcementSignature = message.getAnnouncementSignature();
+        sign(privKey);
+    }
+
 
     @Override
     public boolean equals(Object o) {
@@ -44,7 +58,8 @@ public class EchoMessagePostGeneral extends EchoMessage {
 
     @Override
     public byte[] serialize() {
-        return Utils.serializeMessage(getOp(), getPubKey(), _message, _quotedAnnouncements, _rid, _wts, _rank);
+        return Utils.serializeMessage(getOp(), getPubKey(), _message, _quotedAnnouncements, _rid, _wts, _rank,
+                getNonce());
     }
 
     public String getMessage() {

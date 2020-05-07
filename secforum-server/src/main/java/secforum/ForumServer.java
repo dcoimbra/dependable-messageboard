@@ -103,7 +103,7 @@ public class ForumServer {
             try {
                 ForumServer.readForum();
             } catch (FileNotFoundException e) {
-                _forum = new Forum(password);
+                _forum = new Forum(password, _id);
             }
             Registry rmiRegistry = LocateRegistry.createRegistry(registryPort + _id);
             rmiRegistry.rebind("forum" + _id, ForumServer.getForum());

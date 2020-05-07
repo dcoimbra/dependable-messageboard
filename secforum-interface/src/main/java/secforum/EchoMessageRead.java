@@ -14,15 +14,25 @@ public class EchoMessageRead extends EchoMessage {
     private final Remote _clientStub;
     private final byte[] _requestSignature;
 
-    public EchoMessageRead(PublicKey pubKey, PublicKey targetKey, int number, int rid, Remote clientStub,
-                           byte[] requestSignature, PrivateKey _privKey) {
-        super("read", pubKey);
+    public EchoMessageRead(int serverId, PublicKey pubKey, PublicKey targetKey, int number, int rid, Remote clientStub,
+                           byte[] requestSignature, PrivateKey privKey, int nonce) {
+        super(serverId,"read", pubKey, nonce);
         _targetKey = targetKey;
         _number = number;
         _rid = rid;
         _clientStub = clientStub;
         _requestSignature = requestSignature;
-        sign(_privKey);
+        sign(privKey);
+    }
+
+    public EchoMessageRead(EchoMessageRead message, int id, PrivateKey privKey, int nonce) {
+        super(message, id, nonce);
+        _targetKey = message.getTargetKey();
+        _number = message.getNumber();
+        _rid = message.getRid();
+        _clientStub = message.getClientStub();
+        _requestSignature = message.getRequestSignature();
+        sign(privKey);
     }
 
     @Override
@@ -39,7 +49,7 @@ public class EchoMessageRead extends EchoMessage {
 
     @Override
     public byte[] serialize() {
-        return Utils.serializeMessage(getOp(), getPubKey(), _targetKey, _number, _rid, _clientStub);
+        return Utils.serializeMessage(getOp(), getPubKey(), _targetKey, _number, _rid, _clientStub, getNonce());
     }
 
     public PublicKey getTargetKey() {
