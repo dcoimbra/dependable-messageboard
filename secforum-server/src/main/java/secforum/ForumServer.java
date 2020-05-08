@@ -15,7 +15,7 @@ public class ForumServer {
     private static Forum _forum;
     private static final String _filename = "src/main/resources/forum";
     private static final String _backup = "src/main/resources/forum_backup";
-    private static final String _extention = ".ser";
+    private static final String _extension = ".ser";
     private static int _id;
 
     public static Forum getForum() {
@@ -28,7 +28,7 @@ public class ForumServer {
 
     public static void readForum() throws FileNotFoundException {
        try {
-           FileInputStream file = new FileInputStream(_filename + _id + _extention);
+           FileInputStream file = new FileInputStream(_filename + _id + _extension);
            ObjectInputStream in = new ObjectInputStream(file);
 
            Forum forum = (Forum) in.readObject();
@@ -38,7 +38,7 @@ public class ForumServer {
            ForumServer.setForum(forum);
        } catch (ClassNotFoundException | IOException e) {
            try {
-               FileInputStream file_backup = new FileInputStream(_backup + _id + _extention);
+               FileInputStream file_backup = new FileInputStream(_backup + _id + _extension);
                ObjectInputStream backup_in = new ObjectInputStream(file_backup);
 
                Forum forum = (Forum) backup_in.readObject();
@@ -55,14 +55,14 @@ public class ForumServer {
     }
 
     public static void writeForum(Forum forum) throws IOException {
-        FileOutputStream file = new FileOutputStream(_filename + _id + _extention);
+        FileOutputStream file = new FileOutputStream(_filename + _id + _extension);
         ObjectOutputStream out = new ObjectOutputStream(file);
 
         out.writeObject(forum);
         out.close();
         file.close();
 
-        FileOutputStream backup = new FileOutputStream(_backup + _id + _extention);
+        FileOutputStream backup = new FileOutputStream(_backup + _id + _extension);
         ObjectOutputStream backup_out = new ObjectOutputStream(backup);
 
         backup_out.writeObject(forum);
