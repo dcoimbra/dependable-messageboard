@@ -378,10 +378,14 @@ public class Client implements ClientCallbackInterface {
             for (Announcement a : announcements) {
                 System.out.println(a);
             }
-
             readComplete();
             return "Got " + announcements.size() + " announcement(s)!";
         } catch (IllegalArgumentException | NullPointerException | InterruptedException e) {
+            try {
+                readComplete();
+            } catch (InterruptedException interruptedException) {
+                throw new IllegalArgumentException(BYZANTINE_ERROR);
+            }
             throw new IllegalArgumentException(BYZANTINE_ERROR);
         }
     }
