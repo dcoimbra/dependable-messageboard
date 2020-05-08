@@ -11,6 +11,8 @@ import java.util.List;
 public interface ForumInterface extends Remote {
     Response getNonce(PublicKey pubKey) throws RemoteException;
 
+    Response getTs(PublicKey pubKey) throws RemoteException;
+
     Response register(PublicKey pubKey) throws RemoteException;
 
     Response post(PublicKey pubKey, String message, List<String> ids, int wts, int rank, byte[] signature) throws RemoteException;

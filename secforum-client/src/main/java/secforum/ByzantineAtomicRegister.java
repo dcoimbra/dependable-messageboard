@@ -22,9 +22,10 @@ public class ByzantineAtomicRegister {
         return _wts;
     }
 
-    public synchronized void setWts() {
-        _wts++;
+    public synchronized void setWts(int wts) {
+        _wts = wts;
     }
+    public synchronized void incWts() { _wts++; }
 
     public List<Integer> getAcklist() {
         return _acklist;

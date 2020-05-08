@@ -26,6 +26,7 @@ public class Client implements ClientCallbackInterface {
     private ByzantineAtomicRegister _atomicRegister;
     private ByzantineRegularRegister _regularRegisterGeneral;
     private static int _rank;
+    private boolean _firstTime;
 
     private static final String BYZANTINE_ERROR = "\nERROR: Byzantine fault detected.";
     private static final String WRITE_RESPONSE = "Post verified!";
@@ -34,6 +35,7 @@ public class Client implements ClientCallbackInterface {
         try {
             _clientStub = UnicastRemoteObject.exportObject(this, 8887 + Integer.parseInt(id));
             _keyboardSc = new Scanner(System.in);
+            _firstTime = true;
 
             _publicKey = Utils.loadPublicKey(id);
             _serverKey = Utils.loadPublicKeyFromCerificate("src/main/resources/server.cer");
@@ -160,13 +162,16 @@ public class Client implements ClientCallbackInterface {
     }
 
     public String post(List<Thread> threads, String message, List<String> quotedAnnouncements) throws InterruptedException {
-        int wts = _atomicRegister.getWts();
         _atomicRegister.clearAcklist();
 
         for (int i = 0; i < _N; i++) {
             threads.add(new Thread(new PostRequest(_forums.get(i), _privateKey, _publicKey, _serverKey,
-                    message, quotedAnnouncements, wts, _rank, _atomicRegister)));
+                    message, quotedAnnouncements, _rank, _atomicRegister, _firstTime)));
             threads.get(i).start();
+        }
+
+        if (_firstTime) {
+            _firstTime = false;
         }
 
         for (Thread t : threads) {
@@ -178,7 +183,7 @@ public class Client implements ClientCallbackInterface {
 
         System.out.println("\nVerifying post....");
         if (_atomicRegister.getAcklist().size() > (_N + _f) / 2) {
-            _atomicRegister.setWts();
+            _atomicRegister.incWts();
             return WRITE_RESPONSE;
         } else {
             throw new IllegalArgumentException(BYZANTINE_ERROR);

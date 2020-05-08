@@ -8,7 +8,6 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-
 public class Account implements Serializable {
 
     private final int _id;

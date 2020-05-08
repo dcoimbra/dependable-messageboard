@@ -126,8 +126,18 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
     public Response getNonce(PublicKey pubKey) {
+        System.out.println("====== GETNONCE ======");
         if(!verifyRegistered(pubKey)){
             return new NonceResponse(_privKey, _accounts.get(pubKey).getNonce());
+        }
+
+        return _notClient;
+    }
+
+    public Response getTs(PublicKey pubKey) {
+        System.out.println("====== GETTS ======");
+        if(!verifyRegistered(pubKey)){
+            return new NonceResponse(_privKey, _accounts.get(pubKey).getTs());
         }
 
         return _notClient;
