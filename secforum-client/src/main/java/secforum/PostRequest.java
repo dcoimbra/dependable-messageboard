@@ -41,20 +41,14 @@ public class PostRequest implements Runnable {
             int wts;
 
             if (_firstTime) {
-                System.out.println("First time. Will ask for ts.");
                 Response res = _forum.getTs(_publicKey);
                 wts = res.verifyNonce(_serverKey);
-                System.out.println("Server sent ts " + wts);
                 wts++;
-                System.out.println("Incremented ts to " + wts);
                 _atomicRegister.setWts(wts);
-                System.out.println("Saved ts " + wts);
             }
 
             else {
-                System.out.println("Not first time. Will use current ts");
                 wts = _atomicRegister.getWts();
-                System.out.println("Current ts is " + wts);
             }
 
             Response res = _forum.getNonce(_publicKey);
@@ -63,7 +57,6 @@ public class PostRequest implements Runnable {
             byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, nonce, wts, _rank);
             byte[] signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
 
-            System.out.println("Sent with ts " + wts);
             res = _forum.post(_publicKey, _message, _quotedAnnouncements, wts, _rank, signature);
 
             try {
