@@ -53,12 +53,8 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         _accounts = new HashMap<>();
         _generalBoard = new Board();
 
-        FileInputStream fis;
         try {
-            fis = new FileInputStream("src/main/resources/keystoreserver.jks");
-            KeyStore keystore = KeyStore.getInstance("JKS");
-            keystore.load(fis, (password).toCharArray());
-            _privKey = (PrivateKey) keystore.getKey("server", (password).toCharArray());
+            _privKey = Utils.loadPrivateKeyServer(Integer.toString(_id), password);
             _ts = 0;
             _rank = -1;
         } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | NoSuchAlgorithmException |
@@ -127,7 +123,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
     public Response getNonce(PublicKey pubKey) {
         System.out.println("====== GETNONCE ======");
-        if(!verifyRegistered(pubKey)){
+        if (verifyRegistered(pubKey)){
             return new NonceResponse(_privKey, _accounts.get(pubKey).getNonce());
         }
 
@@ -136,7 +132,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
     public Response getTs(PublicKey pubKey) {
         System.out.println("====== GETTS ======");
-        if(!verifyRegistered(pubKey)){
+        if (verifyRegistered(pubKey)){
             return new NonceResponse(_privKey, _accounts.get(pubKey).getTs());
         }
 
@@ -490,12 +486,12 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         return null;
     }
 
-    protected PublicKey loadPublicKey() {
+    public static PublicKey loadPublicKey(int id) {
         try {
-            FileInputStream fis = new FileInputStream("src/main/resources/keystoreserver.jks");
+            FileInputStream fis = new FileInputStream("src/main/resources/keystoreserver" + id + ".jks");
             KeyStore keystore = KeyStore.getInstance("JKS");
-            keystore.load(fis, ("server").toCharArray());
-            Certificate cert = keystore.getCertificate("server");
+            keystore.load(fis, ("server" + id).toCharArray());
+            Certificate cert = keystore.getCertificate("server" + id);
             return cert.getPublicKey();
         } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
             return null;
@@ -503,7 +499,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
     private boolean verifyRegistered(PublicKey pubKey) {
-        return !_accounts.containsKey(pubKey);
+        return _accounts.containsKey(pubKey);
     }
 
     private List<Announcement> verifyAnnouncements(List<String> announcementIDs) throws RemoteException {
@@ -628,11 +624,11 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         if (!message.getOp().equals("register")) {
             Account senderAccount = _accounts.get(message.getPubKey());
-            senderAccount.echo(message, loadPublicKey());
+            senderAccount.echo(message, loadPublicKey(message.getServerId()));
             return;
         }
 
-        if (message.verify(loadPublicKey(), message.serialize())) {
+        if (message.verify(loadPublicKey(message.getServerId()), message.serialize())) {
             System.out.println("(echo) Verified");
             Account.addEcho(message, _echos, _echoLatch);
         } else {
@@ -645,11 +641,11 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
 
         if (!message.getOp().equals("register")) {
             Account senderAccount = _accounts.get(message.getPubKey());
-            senderAccount.ready(message, loadPublicKey());
+            senderAccount.ready(message, loadPublicKey(message.getServerId()));
             return;
         }
 
-        if (message.verify(loadPublicKey(), message.serialize())) {
+        if (message.verify(loadPublicKey(message.getServerId()), message.serialize())) {
             System.out.println("(ready) Verified");
             Account.addReady(message, _readys, _readyLatch);
         } else {

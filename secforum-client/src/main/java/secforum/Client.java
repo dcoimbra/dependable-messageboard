@@ -17,7 +17,7 @@ import java.util.Scanner;
 public class Client implements ClientCallbackInterface {
     private PublicKey _publicKey;
     private PrivateKey _privateKey;
-    private PublicKey _serverKey;
+    private List<PublicKey> _serverKeys;
     private final List<ForumInterface> _forums = new ArrayList<>();
     private Scanner _keyboardSc;
     private Remote _clientStub;
@@ -33,12 +33,13 @@ public class Client implements ClientCallbackInterface {
 
     public Client(String id) {
         try {
+            _serverKeys = new ArrayList<>();
+
             _clientStub = UnicastRemoteObject.exportObject(this, 8887 + Integer.parseInt(id));
             _keyboardSc = new Scanner(System.in);
             _firstTime = true;
 
             _publicKey = Utils.loadPublicKey(id);
-            _serverKey = Utils.loadPublicKeyFromCerificate("src/main/resources/server.cer");
             _rank = Integer.parseInt(id);
 
             System.out.println("Enter your private key password:");
@@ -52,6 +53,7 @@ public class Client implements ClientCallbackInterface {
                 name = "//localhost:" + (1099 + i) + "/forum" + i;
                 _forums.add((ForumInterface) Naming.lookup(name));
                 System.out.println("Found server: " + name);
+                _serverKeys.add(Utils.loadPublicKeyFromCerificate("src/main/resources/server" + i + ".cer"));
             }
 
         } catch (NotBoundException | NoSuchAlgorithmException | IOException | KeyStoreException | CertificateException |
@@ -143,13 +145,15 @@ public class Client implements ClientCallbackInterface {
                 System.out.println("Thread interrupted.");
             } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
                 System.out.println("Internal error.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Something went wrong.");
             }
         }
     }
 
     public void register(List<Thread> threads) throws InterruptedException {
         for (int i = 0; i < _N; i++) {
-            threads.add(new Thread(new RegisterRequest(_forums.get(i), _publicKey, _serverKey)));
+            threads.add(new Thread(new RegisterRequest(_forums.get(i), _publicKey, _serverKeys.get(i))));
             threads.get(i).start();
         }
 
@@ -165,7 +169,7 @@ public class Client implements ClientCallbackInterface {
         _atomicRegister.clearAcklist();
 
         for (int i = 0; i < _N; i++) {
-            threads.add(new Thread(new PostRequest(_forums.get(i), _privateKey, _publicKey, _serverKey,
+            threads.add(new Thread(new PostRequest(_forums.get(i), _privateKey, _publicKey, _serverKeys.get(i),
                     message, quotedAnnouncements, _rank, _atomicRegister, _firstTime)));
             threads.get(i).start();
         }
@@ -197,7 +201,7 @@ public class Client implements ClientCallbackInterface {
 
         for (int i = 0; i < _N; i++) {
             threads.add(new Thread(new ReadRequest(_forums.get(i), _privateKey, _publicKey, publicKey,
-                    _serverKey, nAnnouncement, rid, _clientStub, _atomicRegister)));
+                    _serverKeys.get(i), nAnnouncement, rid, _clientStub, _atomicRegister)));
             threads.get(i).start();
         }
 
@@ -220,7 +224,7 @@ public class Client implements ClientCallbackInterface {
         // Before write, must read value to get most recent ts
         for (int i = 0; i < _N; i++) {
             threads.add(new Thread(new ReadGeneralRequest(_forums.get(i), _privateKey, _publicKey,
-                    _serverKey, 1, rid, _regularRegisterGeneral)));
+                    _serverKeys.get(i), 1, rid, _regularRegisterGeneral)));
             threads.get(i).start();
         }
 
@@ -245,7 +249,7 @@ public class Client implements ClientCallbackInterface {
         threads = new ArrayList<>();
         for (int i = 0; i < _N; i++) {
             threads.add(new Thread(new PostGeneralRequest(_forums.get(i), _privateKey, _publicKey,
-                    _serverKey, message, quotedAnnouncements, maxTs, _rank, rid, _regularRegisterGeneral)));
+                    _serverKeys.get(i), message, quotedAnnouncements, maxTs, _rank, rid, _regularRegisterGeneral)));
             threads.get(i).start();
         }
 
@@ -274,7 +278,7 @@ public class Client implements ClientCallbackInterface {
 
         for (int i = 0; i < _N; i++) {
             threads.add(new Thread(new ReadGeneralRequest(_forums.get(i), _privateKey, _publicKey,
-                    _serverKey, nAnnouncement, rid, _regularRegisterGeneral)));
+                    _serverKeys.get(i), nAnnouncement, rid, _regularRegisterGeneral)));
             threads.get(i).start();
         }
 
@@ -295,7 +299,7 @@ public class Client implements ClientCallbackInterface {
         List<Thread> threads = new ArrayList<>();
 
         for (int i = 0; i < _N; i++) {
-            threads.add(new Thread(new ReadCompleteRequest(_forums.get(i), _privateKey, _publicKey, _serverKey,
+            threads.add(new Thread(new ReadCompleteRequest(_forums.get(i), _privateKey, _publicKey, _serverKeys.get(i),
                     _clientStub, rid)));
             threads.get(i).start();
         }
@@ -311,16 +315,17 @@ public class Client implements ClientCallbackInterface {
     @Override
     public void writeBack(Response res) {
         try {
-            if(res.verify(_serverKey, 0, _atomicRegister.getRid())) {
-                _atomicRegister.setAnswers(res);
+            for (int i = 0; i < _N; i++) {
+                if (res.verify(_serverKeys.get(i), 0, _atomicRegister.getRid())) {
+                    _atomicRegister.setAnswers(res);
+                    System.out.println("Wrote back " + res.getAnnouncements() + " announcements.");
+                    return;
+                }
             }
         } catch (IllegalArgumentException e) {
             System.out.println(e.getMessage());
             System.out.println("Error. Insecure writeback.");
-            return;
         }
-
-        System.out.println("Wrote back " + res.getAnnouncements() + " announcements.");
     }
 
     private String printAnnouncements() {
@@ -376,7 +381,7 @@ public class Client implements ClientCallbackInterface {
 
             readComplete();
             return "Got " + announcements.size() + " announcement(s)!";
-        } catch (IllegalArgumentException | InterruptedException e) {
+        } catch (IllegalArgumentException | NullPointerException | InterruptedException e) {
             throw new IllegalArgumentException(BYZANTINE_ERROR);
         }
     }

@@ -72,9 +72,9 @@ public class ForumSecurityTests {
     @BeforeEach
     public void setUp() {
         try {
-            _forum = new Forum("server", FORUM_ID);
+            _forum = new Forum("server" + FORUM_ID, FORUM_ID);
             _forum.doRegister(_pubKey1);
-            _serverKey = _forum.loadPublicKey();
+            _serverKey = _forum.loadPublicKey(FORUM_ID);
 
             _message = "Hello World!";
             _quotedAnnouncements = new ArrayList<>();
@@ -96,7 +96,7 @@ public class ForumSecurityTests {
         Response res = _forum.getNonce(_pubKey1);
 
         try{
-            Integer nonce = res.verifyNonce(_forum.loadPublicKey());
+            Integer nonce = res.verifyNonce(_forum.loadPublicKey(FORUM_ID));
             assertEquals(_nonce, nonce);
         } catch (IllegalArgumentException iae) {
             System.out.println(iae.getMessage());

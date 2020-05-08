@@ -86,9 +86,9 @@ public class ForumTests {
     @BeforeEach
     public void setUp() {
         try {
-            _forum = new Forum("server", FORUM_ID);
+            _forum = new Forum("server" + FORUM_ID, FORUM_ID);
             _forum.doRegister(_pubKey1);
-            _serverKey = _forum.loadPublicKey();
+            _serverKey = _forum.loadPublicKey(FORUM_ID);
             byte[] messageBytes;
 
             _message = "Hello World!";

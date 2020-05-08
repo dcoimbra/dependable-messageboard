@@ -44,6 +44,7 @@ public class ReadRequest implements Runnable {
             byte[] messageBytes = Utils.serializeMessage(_publicKey, _targetKey, _nAnnouncement, nonce, _rid, _clientStub);
             byte[] signature = SigningSHA256_RSA.sign(messageBytes, _privateKey);
 
+            System.out.println("Read with rid " + _rid);
             res = _forum.read(_publicKey, _targetKey, _nAnnouncement, _rid, _clientStub, signature);
 
             try {

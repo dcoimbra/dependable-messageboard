@@ -15,6 +15,13 @@ public class Utils {
         return (PrivateKey) keystore.getKey("client" + id, password.toCharArray());
     }
 
+    public static PrivateKey loadPrivateKeyServer(String id, String password) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
+        FileInputStream fis = new FileInputStream("src/main/resources/keystoreserver" + id + ".jks");
+        KeyStore keystore = KeyStore.getInstance("JKS");
+        keystore.load(fis, password.toCharArray());
+        return (PrivateKey) keystore.getKey("server" + id, password.toCharArray());
+    }
+
     public static PublicKey loadPublicKey(String id) throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException {
 
         FileInputStream fis = new FileInputStream("src/main/resources/keystoreclient" + id + ".jks");
