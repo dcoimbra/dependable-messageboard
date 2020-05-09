@@ -23,8 +23,11 @@ public class Account implements Serializable {
     private final List<EchoMessage> _readys;
     private final int[] _broadcastNonces;
     private final PrivateKey _privKey;
+    private boolean _broadcasting = false;
+    private final List<ForumReliableBroadcastInterface> _otherServers;
+    private final Forum _forum;
 
-    public Account(PublicKey pubKey, int id, PrivateKey privKey) {
+    public Account(PublicKey pubKey, int id, PrivateKey privKey, Forum forum, List<ForumReliableBroadcastInterface> otherServers) {
         _id = id;
         _pubKey = pubKey;
         _announcementsBoard = new Board();
@@ -38,6 +41,8 @@ public class Account implements Serializable {
         _readys = new Vector<>();
         _broadcastNonces = new int[]{0, 0, 0, 0};
         _privKey = privKey;
+        _otherServers = otherServers;
+        _forum = forum;
     }
 
     protected Map<ClientCallbackInterface, int[]> getListeners() {
@@ -107,72 +112,100 @@ public class Account implements Serializable {
         _listeners.remove(listener);
     }
 
-    public EchoMessage byzantineReliableBroadcast(EchoMessage message, List<ForumReliableBroadcastInterface> otherServers) {
+    public EchoMessage byzantineReliableBroadcast(EchoMessage message) {
         try {
-            List<Thread> threads = new ArrayList<>();
+            _broadcasting = true;
+            sendEcho(message, _otherServers);
 
-            System.out.println("Echo.");
-            for (int i = 0; i < 3; i++) {
-                threads.add(new Thread(new EchoRequest(message, otherServers.get(i))));
-                threads.get(i).start();
-            }
-
-            for (Thread t : threads) {
-                t.join();
-            }
-
-            incMyBroadcastNonce();
-
-            System.out.println("Waiting for echo quorum...");
             _echoLatch.await(5, TimeUnit.SECONDS);
 
-            _echos.add(message);
-            EchoMessage echoMessage = Forum.compareMessages(_echos);
+            EchoMessage echoMessage = checkEchoQuorum();
 
-            if (echoMessage == null) {
-                System.out.println("No echo quorum.");
-                throw new RemoteException("No echo quorum");
-            }
+            sendReady(echoMessage, _otherServers);
 
-            System.out.println("Echo quorum. Ready.");
-
-            echoMessage.setServerId(_id);
-            echoMessage.setNonce(getMyBroadcastNonce());
-            echoMessage.sign(_privKey);
-
-            threads = new ArrayList<>();
-
-            for (int i = 0; i < 3; i++) {
-                threads.add(new Thread(new ReadyRequest(echoMessage, otherServers.get(i))));
-                threads.get(i).start();
-            }
-
-            for (Thread t : threads) {
-                t.join();
-            }
-
-            incMyBroadcastNonce();
-
-            System.out.println("Waiting for ready quorum...");
             _readyLatch.await(5, TimeUnit.SECONDS);
 
-            _readys.add(echoMessage);
-            EchoMessage readyMessage = Forum.compareMessages(_readys);
+            EchoMessage readyMessage = checkReadyQuorum();
 
-            if (readyMessage == null) {
-                System.out.println("No ready quorum.");
-                throw new RemoteException("No ready quorum.");
-            }
-
-            System.out.println("Ready quorum. Delivering message.");
-            _echos.clear();
-            _echoLatch = new CountDownLatch(3);
-            _readys.clear();
-            _readyLatch = new CountDownLatch(3);
+            broadcastClear();
             return readyMessage;
         } catch (RemoteException | InterruptedException e) {
+            broadcastClear();
             return null;
         }
+    }
+
+    public EchoMessage checkEchoQuorum() throws RemoteException {
+        System.out.println("Waiting for echo quorum...");
+        EchoMessage echoMessage = Forum.compareMessages(_echos, _broadcasting);
+
+        if (echoMessage == null) {
+            System.out.println("No echo quorum.");
+            throw new RemoteException("No echo quorum");
+        }
+
+        System.out.println("Echo quorum. Ready.");
+
+        echoMessage.setServerId(_id);
+        echoMessage.setNonce(getMyBroadcastNonce());
+        echoMessage.sign(_privKey);
+
+        return echoMessage;
+    }
+
+    public EchoMessage checkReadyQuorum() throws RemoteException {
+        System.out.println("Waiting for ready quorum...");
+
+        EchoMessage readyMessage = Forum.compareMessages(_readys, _broadcasting);
+
+        if (readyMessage == null) {
+            System.out.println("No ready quorum.");
+            throw new RemoteException("No ready quorum.");
+        }
+
+        System.out.println("Ready quorum. Delivering message.");
+        return readyMessage;
+    }
+
+    public void sendEcho(EchoMessage message, List<ForumReliableBroadcastInterface> otherServers) throws InterruptedException {
+        _echos.add(message);
+        List<Thread> threads = new ArrayList<>();
+
+        System.out.println("Echo.");
+        for (int i = 0; i < 3; i++) {
+            threads.add(new Thread(new EchoRequest(message, otherServers.get(i))));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+        }
+
+        incMyBroadcastNonce();
+    }
+
+    public void sendReady(EchoMessage message, List<ForumReliableBroadcastInterface> otherServers) throws InterruptedException {
+        _readys.add(message);
+        List<Thread> threads = new ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            threads.add(new Thread(new ReadyRequest(message, otherServers.get(i))));
+            threads.get(i).start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+        }
+
+        incMyBroadcastNonce();
+    }
+
+    public void broadcastClear() {
+        _broadcasting = false;
+        _echos.clear();
+        _echoLatch = new CountDownLatch(3);
+        _readys.clear();
+        _readyLatch = new CountDownLatch(3);
     }
 
     public void echo(EchoMessage message, PublicKey publicKey) {
@@ -193,7 +226,7 @@ public class Account implements Serializable {
         echoLatch.countDown();
     }
 
-    public void ready(EchoMessage message, PublicKey publicKey) {
+    public void ready(EchoMessage message, PublicKey publicKey) throws RemoteException, InterruptedException {
 
         int id = message.getServerId();
         int serverNonce = getServerBroadcastNonce(id);
@@ -202,6 +235,16 @@ public class Account implements Serializable {
             System.out.println("(ready) Verified.");
             addReady(message, _readys, _readyLatch);
             setServerBroadcastNonce(id, message.getNonce());
+
+            if (_readys.size() >= 2 && !_broadcasting) {
+                EchoMessage readyMessage = checkReadyQuorum();
+                if (readyMessage != null) {
+                    sendReady(readyMessage, _otherServers);
+                    broadcastClear();
+                    _forum.switchOp(readyMessage);
+                }
+            }
+
         } else {
             System.out.println("(ready) Not verified");
         }
