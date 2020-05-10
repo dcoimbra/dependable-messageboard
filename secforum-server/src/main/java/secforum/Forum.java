@@ -54,7 +54,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         _generalBoard = new Board();
 
         try {
-            _privKey = Utils.loadPrivateKeyServer(Integer.toString(_id), password);
+            _privKey = Utils.loadPrivateKeyServer(Integer.toString(_id), password + _id);
             _ts = 0;
             _rank = -1;
         } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | NoSuchAlgorithmException |

@@ -39,7 +39,6 @@ public class AnnouncementTests {
             PrivateKey privateKey = Utils.loadPrivateKey("1", "client1");
 
             byte[] messageBytes = Utils.serializeMessage(_publicKey, _message, _quotedAnnouncements, _nonce);
-
             _signature = SigningSHA256_RSA.sign(messageBytes, privateKey);
         } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
             e.printStackTrace();

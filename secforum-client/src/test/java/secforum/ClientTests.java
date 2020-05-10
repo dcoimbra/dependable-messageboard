@@ -107,9 +107,11 @@ public class ClientTests {
     @Test
     void invalidReadNAnnouncementsTooHigh() {
         try {
+            System.out.println("POST PHASE");
             _client.post(_threads, _readMessage, _quotedAnnouncements);
             _threads = new ArrayList<>();
 
+            System.out.println("READ PHASE");
             assertThrows(IllegalArgumentException.class,
                     () ->_client.read(_threads, _publicKey, 1000));
         } catch (InterruptedException e) {
@@ -120,8 +122,12 @@ public class ClientTests {
     @Test
     void invalidReadNAnnouncementsTooLow() {
         try {
+            System.out.println("POST PHASE");
+
             _client.post(_threads, _readMessage, _quotedAnnouncements);
             _threads = new ArrayList<>();
+
+            System.out.println("READ PHASE");
 
             assertThrows(IllegalArgumentException.class,
                     () ->_client.read(_threads, _publicKey, -1));

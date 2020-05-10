@@ -2,7 +2,10 @@ Private key passwords for the 3 clients and the server:
 Client 1: client1
 Client 2: client2
 Client 3: client3
-Server: server
+Server 0: server0
+Server 1: server1
+Server 2: server2
+Server 3: server3
 
 How to run:
 First, while on the root directory, install the interface module and run all tests:
