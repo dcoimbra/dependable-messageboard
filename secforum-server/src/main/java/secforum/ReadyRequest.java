@@ -16,7 +16,7 @@ public class ReadyRequest implements Runnable {
     public void run() {
         try {
             _server.ready(_message);
-        } catch (RemoteException e) {
+        } catch (RemoteException | InterruptedException e) {
             System.out.println("Ready error.");
         }
     }

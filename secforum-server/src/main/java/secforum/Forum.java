@@ -110,7 +110,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
     private Response broadcastAndExecute(int id, Account senderAccount, EchoMessage echoMessage) {
-        EchoMessage delivered = senderAccount.byzantineReliableBroadcast(echoMessage, _otherServers);
+        EchoMessage delivered = senderAccount.byzantineReliableBroadcast(echoMessage);
 
         if(delivered != null) {
             return switchOp(delivered);
@@ -160,7 +160,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     public Response doRegister(PublicKey pubKey) {
         Response res;
 
-        if (_accounts.putIfAbsent(pubKey, new Account(pubKey, _id, _privKey)) != null) {
+        if (_accounts.putIfAbsent(pubKey, new Account(pubKey, _id, _privKey, this, _otherServers)) != null) {
             res = new ExceptionResponse(new RemoteException("\nRequest error! User is already registered!"), _privKey,
                     0, -1);
         } else {
@@ -537,7 +537,17 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
 
-    public static EchoMessage compareMessages(List<EchoMessage> messages) {
+    public static EchoMessage compareMessages(List<EchoMessage> messages, boolean broadcasting) {
+
+        int cutoff;
+
+        if (broadcasting) {
+            cutoff = (_N + _f) / 2;
+        }
+
+        else {
+            cutoff = _f;
+        }
 
         System.out.println("Comparing messages...");
         EchoMessage message;
@@ -552,7 +562,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
                     if (other.equals(message)) {
                         quorumCounter++;
 
-                        if (quorumCounter > (_N + _f) / 2) {
+                        if (quorumCounter > cutoff) {
                             System.out.println("Got a quorum.");
                             return message;
                         }
@@ -581,7 +591,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         System.out.println("Waiting for echo quorum...");
         _echoLatch.await(10, TimeUnit.SECONDS);
 
-        EchoMessage echoMessage = compareMessages(_echos);
+        EchoMessage echoMessage = compareMessages(_echos, true);
 
         if (echoMessage == null) {
             System.out.println("No echo quorum.");
@@ -604,7 +614,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
         System.out.println("Waiting for ready quorum...");
         _readyLatch.await(10, TimeUnit.SECONDS);
 
-        EchoMessage readyMessage = compareMessages(_readys);
+        EchoMessage readyMessage = compareMessages(_readys, true);
 
         if (readyMessage == null) {
             System.out.println("No ready quorum.");
@@ -637,7 +647,7 @@ public class Forum extends UnicastRemoteObject implements ForumInterface, ForumR
     }
 
     @Override
-    public void ready(EchoMessage message) {
+    public void ready(EchoMessage message) throws RemoteException, InterruptedException {
 
         if (!message.getOp().equals("register")) {
             Account senderAccount = _accounts.get(message.getPubKey());
